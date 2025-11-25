@@ -1,273 +1,227 @@
 # Anonymous Feedback System
 
-A comprehensive, secure, and feature-rich anonymous feedback platform built with Next.js 15, Supabase, and Google Gemini AI. This system enables organizations to collect, manage, and analyze anonymous feedback while maintaining reporter privacy and ensuring constructive communication.
+A comprehensive, secure, and feature-rich anonymous feedback platform built with Next.js 15, Supabase, and Google Gemini AI. This system enables organizations to collect, manage, and analyze anonymous feedback while maintaining complete reporter privacy.
 
-## Features
+## 🌟 Key Features
 
-### Core Functionality
+### For Reporters
+- **Complete Anonymity**: SHA-256 hashed access codes protect identity
+- **Easy Submission**: Multi-step guided form with categories and tags
+- **Real-time Tracking**: Track feedback status using unique access codes
+- **Two-way Communication**: Respond to admin questions anonymously
+- **Optional Notifications**: Choose to receive updates via email or Telegram
 
-#### Anonymous Feedback Submission
-- **Complete Anonymity**: SHA-256 hashed access codes ensure reporter identity protection
-- **Multi-step Form**: Guided submission process with categories, tags, urgency levels, and custom questions
-- **Rating Questions**: Support for slider-based ratings, multiple choice, and open-ended responses
-- **Access Code System**: Unique 12-character codes (e.g., `ABCD-EFGH-IJKL`) for tracking without identity exposure
+### For Administrators
+- **Powerful Dashboard**: Real-time analytics with charts and trends
+- **Smart Management**: Filter, search, and bulk-process feedback
+- **AI-Powered Insights**: Automatic categorization, sentiment analysis, and trend detection
+- **Moderation Tools**: Spam detection with auto-filtering and manual review queue
+- **Custom Configuration**: Tailor categories, questions, and branding to your needs
 
-#### Feedback Tracking & Follow-up
-- **Anonymous Tracking**: Reporters can track their feedback status using their access code
-- **Two-way Communication**: Chat-style interface for admin-reporter conversations
-- **Optional Notifications**: Reporters can opt-in to receive updates via email or Telegram
-- **Status Timeline**: Visual progress tracking (Received → In Progress → Resolved)
+### AI Capabilities (Google Gemini)
+- Automatic category suggestions
+- Urgency level assessment
+- Sentiment analysis (positive/negative/neutral/mixed)
+- Key topics extraction
+- Actionable insights generation
+- Comprehensive trend reports
 
-#### Admin Dashboard
-- **Analytics Overview**: Real-time charts showing category distribution, sentiment breakdown, and trends
-- **Feedback Management**: Filter, search, and manage all feedback entries
-- **Clarification Requests**: Request additional information without revealing reporter identity
-- **Bulk Actions**: Process multiple feedback items simultaneously
+## 🚀 Tech Stack
 
-### Configuration & Customization
+| Layer | Technologies |
+|-------|-------------|
+| **Frontend** | Next.js 15, React, TypeScript, Tailwind CSS 4, shadcn/ui, Recharts |
+| **Backend** | Next.js Server Actions, Supabase (PostgreSQL), Row Level Security |
+| **AI & Integrations** | Google Gemini 1.5 Flash, Telegram Bot API, Webhooks |
 
-#### Admin Settings
-- **Categories Management**: Create, edit, and organize feedback categories with icons and colors
-- **Tags System**: Define reusable tags for better organization
-- **Custom Questions**: Add rating scales, multiple choice, or text questions to the feedback form
-- **Branding**: Customize logo, colors, site name, and trust badges
+## 📋 Prerequisites
 
-#### Notification Integrations
-- **Email Notifications**: Receive alerts for new feedback and status changes
-- **Telegram Bot**: Real-time notifications via Telegram with custom bot token
-- **Slack Integration**: Post feedback to Slack channels
-- **Webhooks**: Custom webhook support for external integrations
+- Node.js 18+ and npm/yarn/pnpm
+- Supabase account
+- Google Gemini API key
+- (Optional) Telegram Bot token for notifications
 
-### AI-Powered Features (Google Gemini)
+## ⚙️ Installation
 
-#### Automatic Categorization
-- **Smart Category Suggestions**: AI analyzes feedback content to suggest appropriate categories
-- **Urgency Assessment**: Automatic urgency level recommendations based on content analysis
-- **Sentiment Analysis**: Detect positive, negative, neutral, or mixed sentiment
-- **Key Topics Extraction**: Identify main themes and topics automatically
-- **Action Items**: Extract actionable suggestions from feedback text
+### 1. Clone and Install Dependencies
 
-#### Comprehensive Reports
-- **Executive Summaries**: AI-generated overview of feedback trends
-- **Theme Analysis**: Identify recurring patterns and their frequency
-- **Trend Detection**: Spot emerging issues before they escalate
+```bash
+git clone <repository-url>
+cd anonymous-feedback-system
+npm install
+```
 
-### Security & Moderation
+### 2. Environment Setup
 
-#### Spam Prevention
-- **Pattern Detection**: Identify promotional spam, phishing attempts, and abusive content
-- **Trust Scoring**: Calculate content quality scores (0-100) for each submission
-- **Rate Limiting**: Prevent submission flooding from single sources
-- **Gibberish Detection**: Filter out meaningless or automated submissions
+Create a `.env.local` file in the root directory:
 
-#### Moderation Queue
-- **Risk Level Filtering**: Prioritize review by critical, high, medium, or low risk
-- **Bulk Moderation**: Approve or reject multiple items at once
-- **Auto-Reject**: Automatically handle critical threats and obvious spam
-- **Detailed Flags**: View specific reasons why content was flagged
-
-#### Row Level Security (RLS)
-- **Database-level Protection**: Supabase RLS policies ensure data isolation
-- **Admin-only Access**: Sensitive operations restricted to authenticated admins
-- **Public Submission**: Anonymous submissions allowed without authentication
-
-## Tech Stack
-
-### Frontend
-- **Next.js 15**: React framework with App Router and Server Actions
-- **TypeScript**: Type-safe development
-- **Tailwind CSS 4**: Utility-first styling
-- **shadcn/ui**: High-quality UI components
-- **Recharts**: Data visualization for analytics
-
-### Backend
-- **Supabase**: PostgreSQL database with real-time subscriptions
-- **Row Level Security**: Database-level access control
-- **Server Actions**: Secure server-side mutations
-
-### AI & Integrations
-- **Google Gemini 1.5 Flash**: AI-powered categorization and analysis
-- **Telegram Bot API**: Real-time notifications
-- **Webhook Support**: External system integration
-
-## Environment Variables
-
-\`\`\`env
-# Supabase
-NEXT_PUBLIC_SUPABASE_URL=your_supabase_url
-NEXT_PUBLIC_SUPABASE_ANON_KEY=your_anon_key
+```env
+# Supabase Configuration
+NEXT_PUBLIC_SUPABASE_URL=your_supabase_project_url
+NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
 SUPABASE_SERVICE_ROLE_KEY=your_service_role_key
 
-# Development redirect URL for Supabase Auth
-NEXT_PUBLIC_DEV_SUPABASE_REDIRECT_URL=your_dev_redirect_url
+# Development Auth Redirect (for local testing)
+NEXT_PUBLIC_DEV_SUPABASE_REDIRECT_URL=http://localhost:3000
 
 # Google Gemini AI
 GEMINI_API_KEY=your_gemini_api_key
 
-# Optional: API Authentication
-FEEDBACK_API_KEY=your_api_key_for_external_access
-\`\`\`
+# Optional: API Authentication for external access
+FEEDBACK_API_KEY=your_custom_api_key
+```
 
-## Database Setup
+### 3. Database Setup
 
-Run the SQL migration scripts in order:
+Run the SQL migration scripts in your Supabase SQL Editor in this order:
 
-\`\`\`bash
-# 1. Create base schema with RLS policies
-scripts/001_create_schema.sql
+1. `scripts/001_create_schema.sql` - Creates tables and RLS policies
+2. `scripts/002_seed_data.sql` - Seeds initial categories, tags, and settings
+3. `scripts/003_add_ai_fields.sql` - Adds AI analysis fields
+4. `scripts/004_reporter_notifications.sql` - Adds notification preferences
 
-# 2. Seed initial categories, tags, and settings
-scripts/002_seed_data.sql
+### 4. Run Development Server
 
-# 3. Add AI analysis fields
-scripts/003_add_ai_fields.sql
+```bash
+npm run dev
+```
 
-# 4. Add reporter notification fields
-scripts/004_reporter_notifications.sql
-\`\`\`
+Visit [http://localhost:3000](http://localhost:3000) to see your app.
 
-## Project Structure
+## 📁 Project Structure
 
-\`\`\`
+```
+anonymous-feedback-system/
 ├── app/
-│   ├── page.tsx                 # Public feedback submission page
-│   ├── track/page.tsx           # Feedback tracking page
+│   ├── page.tsx                      # Public feedback submission
+│   ├── track/page.tsx                # Feedback tracking portal
 │   ├── admin/
-│   │   ├── page.tsx             # Admin dashboard
-│   │   ├── settings/page.tsx    # Admin configuration
-│   │   └── moderation/page.tsx  # Moderation queue
+│   │   ├── page.tsx                  # Admin dashboard
+│   │   ├── settings/page.tsx         # Configuration panel
+│   │   └── moderation/page.tsx       # Moderation queue
 │   ├── auth/
-│   │   ├── login/page.tsx       # Admin login
-│   │   └── sign-up/page.tsx     # Admin registration
-│   ├── actions/
-│   │   ├── feedback.ts          # Feedback CRUD operations
-│   │   ├── config.ts            # Configuration management
-│   │   └── moderation.ts        # Moderation actions
-│   └── api/
-│       ├── feedback/            # REST API endpoints
-│       └── webhooks/            # Webhook handlers
+│   │   ├── login/page.tsx            # Admin login
+│   │   └── sign-up/page.tsx          # Admin registration
+│   ├── actions/                      # Server Actions
+│   │   ├── feedback.ts
+│   │   ├── config.ts
+│   │   └── moderation.ts
+│   └── api/                          # REST API endpoints
+│       ├── feedback/
+│       └── webhooks/
 ├── components/
 │   ├── feedback/
-│   │   └── feedback-form.tsx    # Multi-step submission form
-│   ├── admin/
-│   │   ├── admin-dashboard.tsx  # Main dashboard component
-│   │   ├── admin-settings.tsx   # Settings management
+│   │   └── feedback-form.tsx         # Multi-step form
+│   ├── admin/                        # Admin components
+│   │   ├── admin-dashboard.tsx
+│   │   ├── admin-settings.tsx
 │   │   ├── analytics-overview.tsx
 │   │   ├── feedback-list.tsx
 │   │   ├── feedback-detail.tsx
 │   │   └── moderation-queue.tsx
 │   └── layout/
-│       └── site-header.tsx      # Navigation header
+│       └── site-header.tsx
 ├── lib/
 │   ├── db/
-│   │   └── index.ts             # Database client and helpers
+│   │   └── index.ts                  # Database utilities
 │   ├── supabase/
-│   │   ├── client.ts            # Browser Supabase client
-│   │   ├── server.ts            # Server Supabase client
-│   │   └── middleware.ts        # Auth middleware
-│   ├── ai-categorization.ts     # Gemini AI integration
-│   ├── feedback-utils.ts        # Spam detection utilities
-│   └── notifications.ts         # Notification handlers
+│   │   ├── client.ts                 # Browser client
+│   │   ├── server.ts                 # Server client
+│   │   └── middleware.ts             # Auth middleware
+│   ├── ai-categorization.ts          # Gemini integration
+│   ├── feedback-utils.ts             # Spam detection
+│   └── notifications.ts              # Notification handlers
 └── scripts/
-    └── *.sql                    # Database migrations
-\`\`\`
+    └── *.sql                         # Database migrations
+```
 
-## API Endpoints
+## 🔐 Security Features
 
-### Public Endpoints
+| Feature | Implementation |
+|---------|---------------|
+| **Anonymity** | SHA-256 hashed access codes, no IP logging |
+| **Access Control** | Supabase Row Level Security (RLS) policies |
+| **Spam Prevention** | AI-powered detection with trust scoring |
+| **Rate Limiting** | Prevents submission flooding |
+| **Content Moderation** | Automatic filtering of harmful content |
+| **Admin Auth** | Supabase Authentication for admin access |
 
-#### Submit Feedback
-\`\`\`http
-POST /api/feedback
-Content-Type: application/json
+## 👥 User Workflows
 
-{
-  "subject": "Feedback subject",
-  "description": "Detailed description",
-  "category_id": "uuid",
-  "feedback_type": "suggestion|concern|praise|question",
-  "urgency": "low|medium|high|critical"
-}
-\`\`\`
+### Reporter Journey
+1. Visit feedback page → Complete multi-step form
+2. Receive unique access code (format: `XXXX-XXXX-XXXX`)
+3. Track feedback status anytime using access code
+4. Respond to admin clarification requests (optional)
+5. Receive notifications on status changes (optional)
 
-#### Track Feedback
-\`\`\`http
-GET /api/feedback/track?code=XXXX-XXXX-XXXX
-\`\`\`
-
-### Admin Endpoints (Requires API Key)
-
-#### List All Feedback
-\`\`\`http
-GET /api/feedback
-X-API-Key: your_api_key
-\`\`\`
-
-#### Get Single Feedback
-\`\`\`http
-GET /api/feedback/[id]
-X-API-Key: your_api_key
-\`\`\`
-
-#### Update Feedback Status
-\`\`\`http
-PATCH /api/feedback/[id]
-X-API-Key: your_api_key
-Content-Type: application/json
-
-{
-  "status": "in-progress|resolved",
-  "admin_notes": "Notes about resolution"
-}
-\`\`\`
-
-## User Flows
-
-### Reporter Flow
-1. Visit the feedback page
-2. Complete multi-step form (category, details, optional contact)
-3. Receive unique access code
-4. Track feedback status using access code
-5. Respond to clarification requests anonymously
-6. Receive optional notifications on updates
-
-### Admin Flow
+### Admin Journey
 1. Login to admin dashboard
-2. View analytics and trends
-3. Review feedback in moderation queue
+2. View analytics: trends, sentiment, categories
+3. Review and moderate submissions
 4. Request clarifications or update status
-5. Configure categories, tags, and questions
-6. Set up notification integrations
-7. Generate AI-powered reports
+5. Configure system: categories, tags, custom questions
+6. Setup integrations: email, Telegram, Slack, webhooks
+7. Generate AI-powered insight reports
 
-## Security Considerations
+## 🎨 Configuration Options
 
-- **No IP Logging**: Reporter IPs are never stored
-- **Hashed Access Codes**: SHA-256 hashing for access code storage
-- **RLS Policies**: Database-level access control
-- **Content Moderation**: Automated spam and abuse detection
-- **Optional Identification**: Reporters choose whether to receive notifications
-- **Admin Authentication**: Supabase Auth for admin access
+Administrators can customize:
+- **Categories**: Create custom feedback categories with icons and colors
+- **Tags**: Define reusable tags for organization
+- **Custom Questions**: Add rating scales, multiple choice, or text fields
+- **Branding**: Upload logo, set colors, customize site name
+- **Notifications**: Configure email, Telegram, Slack, and webhook integrations
+- **Moderation Rules**: Set spam detection sensitivity and auto-reject rules
 
-## Deployment
+## 🚢 Deployment
 
-Your project is live at:
+### Deploy to Vercel
 
-**[https://vercel.com/ngapas-projects/v0-anonymous-feedback-system](https://vercel.com/ngapas-projects/v0-anonymous-feedback-system)**
+1. Push your code to GitHub
+2. Import project in Vercel
+3. Add environment variables
+4. Deploy
 
-## Build your app
+**Live Demo**: [https://anonymous-report-demo.vercel.app/](https://anonymous-report-demo.vercel.app/)
 
-Continue building your app on:
+### Deploy to Other Platforms
 
-**[https://v0.app/chat/oolyGydXcOs](https://v0.app/chat/oolyGydXcOs)**
+The app can be deployed to any platform supporting Next.js:
+- Netlify
+- Railway
+- Self-hosted with Docker
 
-## How It Works
+## 🤝 Contributing
 
-1. Create and modify your project using [v0.app](https://v0.app)
-2. Deploy your chats from the v0 interface
-3. Changes are automatically pushed to this repository
-4. Vercel deploys the latest version from this repository
+Contributions are welcome! Please follow these steps:
 
-## License
+1. Fork the repository
+2. Create a feature branch (`git checkout -b feature/amazing-feature`)
+3. Commit your changes (`git commit -m 'Add amazing feature'`)
+4. Push to the branch (`git push origin feature/amazing-feature`)
+5. Open a Pull Request
 
-MIT License - See LICENSE file for details
+## 📝 License
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
+## 🆘 Support
+
+If you encounter issues or have questions:
+- Open an issue on GitHub
+- Check existing documentation
+- Review Supabase and Next.js documentation
+
+## 🙏 Acknowledgments
+
+Built with:
+- [Next.js](https://nextjs.org/)
+- [Supabase](https://supabase.com/)
+- [Google Gemini AI](https://ai.google.dev/)
+- [shadcn/ui](https://ui.shadcn.com/)
+- [Tailwind CSS](https://tailwindcss.com/)
+
+---
+
+**Made with ❤️ for transparent, anonymous communication**
