@@ -95,12 +95,6 @@ CREATE TABLE IF NOT EXISTS feedback (
   moderation_flags TEXT[] DEFAULT '{}',
   moderation_score INTEGER DEFAULT 100,
   keywords TEXT[] DEFAULT '{}',
-  -- AI-generated categorization
-  ai_category_suggestion TEXT,
-  ai_urgency_suggestion TEXT,
-  ai_summary TEXT,
-  ai_sentiment TEXT CHECK (ai_sentiment IN ('positive', 'neutral', 'negative', 'mixed')),
-  ai_action_items TEXT[],
   admin_notes TEXT[] DEFAULT '{}',
   resolved_at TIMESTAMPTZ,
   -- Reporter notification preferences

@@ -4,7 +4,6 @@ import { db } from "@/lib/db"
 import type { Feedback, Tag } from "@/lib/db"
 import { generateAccessCode, hashAccessCode, moderateContent, extractKeywords } from "@/lib/feedback-utils"
 import { sendNotification } from "@/lib/notifications"
-import { analyzeFeedback } from "@/lib/ai-categorization"
 
 export type FeedbackData = {
   category: string
@@ -38,14 +37,6 @@ export type FeedbackEntry = {
   moderationFlags: string[]
   moderationScore: number | null
   keywords: string[]
-  aiCategory: string | null
-  aiSentiment: "positive" | "neutral" | "negative" | "mixed" | null
-  aiPriority: "low" | "medium" | "high" | "critical" | null
-  aiSummary: string | null
-  aiKeywords: string[] | null
-  aiCategorySuggestion: string | null
-  aiUrgencySuggestion: string | null
-  aiActionItems: string[] | null
   adminNotes: string[]
   resolvedAt: string | null
   createdAt: string
@@ -85,24 +76,8 @@ export async function submitFeedback(data: FeedbackData): Promise<{ accessCode: 
   // Get active tags
   const allTags = await db.tags.getActive()
 
-  // AI analysis
-  let aiAnalysis = null
-  try {
-    aiAnalysis = await analyzeFeedback(
-      data.subject,
-      data.description,
-      data.impact,
-      data.suggestedSolution,
-      allCategories.map((c) => c.name),
-      allTags.map((t) => t.name),
-    )
-  } catch (error) {
-    console.error("[v0] AI analysis failed:", error)
-  }
-
   // Get tag IDs
-  const allSelectedTags = [...new Set([...data.tags, ...(aiAnalysis?.suggestedTags || [])])]
-  const tagIds = allTags.filter((t) => allSelectedTags.includes(t.name)).map((t) => t.id)
+  const tagIds = allTags.filter((t) => data.tags.includes(t.name)).map((t) => t.id)
 
   // Create feedback
   const entry = await db.feedback.create({
@@ -195,14 +170,6 @@ export async function trackFeedback(accessCode: string): Promise<FeedbackEntry |
     moderationFlags: [],
     moderationScore: entry.moderationScore || null,
     keywords: [],
-    aiCategory: entry.aiCategoryId || null,
-    aiSentiment: entry.aiSentiment as FeedbackEntry["aiSentiment"],
-    aiPriority: entry.aiPriority as FeedbackEntry["aiPriority"],
-    aiSummary: entry.aiSummary || null,
-    aiKeywords: entry.aiKeywords || null,
-    aiCategorySuggestion: null,
-    aiUrgencySuggestion: null,
-    aiActionItems: null,
     adminNotes: [],
     resolvedAt: entry.resolvedAt ? new Date(entry.resolvedAt).toISOString() : null,
     createdAt: new Date(entry.createdAt).toISOString(),
@@ -366,14 +333,6 @@ export async function getFeedbackById(id: string): Promise<FeedbackEntry | null>
     moderationFlags: [],
     moderationScore: entry.moderationScore || null,
     keywords: [],
-    aiCategory: entry.aiCategoryId || null,
-    aiSentiment: entry.aiSentiment as FeedbackEntry["aiSentiment"],
-    aiPriority: entry.aiPriority as FeedbackEntry["aiPriority"],
-    aiSummary: entry.aiSummary || null,
-    aiKeywords: entry.aiKeywords || null,
-    aiCategorySuggestion: null,
-    aiUrgencySuggestion: null,
-    aiActionItems: null,
     adminNotes: [],
     resolvedAt: entry.resolvedAt ? new Date(entry.resolvedAt).toISOString() : null,
     createdAt: new Date(entry.createdAt).toISOString(),
@@ -492,15 +451,6 @@ export async function getAnalytics() {
   })
   const typeBreakdown = Object.entries(typeCounts).map(([name, value]) => ({ name, value }))
 
-  // Sentiment breakdown
-  const sentimentCounts: Record<string, number> = {}
-  allFeedback.forEach((f) => {
-    if (f.aiSentiment) {
-      sentimentCounts[f.aiSentiment] = (sentimentCounts[f.aiSentiment] || 0) + 1
-    }
-  })
-  const sentimentBreakdown = Object.entries(sentimentCounts).map(([name, value]) => ({ name, value }))
-
   // Daily trend (last 30 days)
   const thirtyDaysAgo = new Date()
   thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30)
@@ -515,20 +465,6 @@ export async function getAnalytics() {
     .map(([date, count]) => ({ date, count }))
     .sort((a, b) => a.date.localeCompare(b.date))
 
-  // Keywords aggregation
-  const keywordCounts: Record<string, number> = {}
-  allFeedback.forEach((f) => {
-    if (f.aiKeywords) {
-      f.aiKeywords.forEach((kw) => {
-        keywordCounts[kw] = (keywordCounts[kw] || 0) + 1
-      })
-    }
-  })
-  const topKeywords = Object.entries(keywordCounts)
-    .sort((a, b) => b[1] - a[1])
-    .slice(0, 20)
-    .map(([word, count]) => ({ word, count }))
-
   return {
     total,
     resolved,
@@ -537,9 +473,7 @@ export async function getAnalytics() {
     categoryBreakdown,
     urgencyBreakdown,
     typeBreakdown,
-    sentimentBreakdown,
     dailyTrend,
-    topKeywords,
     pending: allFeedback.filter((f) => f.status === "received").length,
     inProgress: allFeedback.filter((f) => f.status === "in_progress").length,
     avgResolutionTime: 0,

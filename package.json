@@ -12,7 +12,6 @@
     "@aws-sdk/client-rds-data": "latest",
     "@cloudflare/workers-types": "latest",
     "@electric-sql/pglite": "latest",
-    "@google/genai": "latest",
     "@hookform/resolvers": "^3.10.0",
     "@libsql/client": "latest",
     "@libsql/client-wasm": "latest",
