@@ -216,7 +216,7 @@ export async function trackFeedback(accessCode: string): Promise<FeedbackEntry |
       id: c.id,
       question: c.question,
       response: c.response || null,
-      createdAt: new Date(c.askedAt).toISOString(),
+      createdAt: new Date(c.createdAt).toISOString(),
       respondedAt: c.respondedAt ? new Date(c.respondedAt).toISOString() : null,
     })),
     responses: responses.map((r) => {
@@ -320,7 +320,7 @@ export async function getAllFeedback(): Promise<FeedbackEntry[]> {
         id: c.id,
         question: c.question,
         response: c.response || null,
-        createdAt: new Date(c.askedAt).toISOString(),
+        createdAt: new Date(c.createdAt).toISOString(),
         respondedAt: c.respondedAt ? new Date(c.respondedAt).toISOString() : null,
       })),
     })
@@ -387,7 +387,7 @@ export async function getFeedbackById(id: string): Promise<FeedbackEntry | null>
       id: c.id,
       question: c.question,
       response: c.response || null,
-      createdAt: new Date(c.askedAt).toISOString(),
+      createdAt: new Date(c.createdAt).toISOString(),
       respondedAt: c.respondedAt ? new Date(c.respondedAt).toISOString() : null,
     })),
     responses: responses.map((r) => {

@@ -107,7 +107,7 @@ export async function getFlaggedFeedback(): Promise<FeedbackEntry[]> {
           id: c.id,
           question: c.question,
           response: c.response || null,
-          createdAt: new Date(c.askedAt).toISOString(),
+          createdAt: new Date(c.createdAt).toISOString(),
           respondedAt: c.respondedAt ? new Date(c.respondedAt).toISOString() : null,
         })),
       })

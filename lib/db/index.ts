@@ -154,7 +154,7 @@ export interface Clarification {
   feedbackId: string
   question: string
   response?: string | null
-  askedAt: Date
+  createdAt: Date
   respondedAt?: Date | null
 }
 
@@ -424,7 +424,7 @@ export const db = {
         .from("clarifications")
         .select("*")
         .eq("feedback_id", feedbackId)
-        .order("asked_at", { ascending: true })
+        .order("created_at", { ascending: true })
       if (error) throw error
       return (data || []).map((row) => toCamelCase<Clarification>(row))
     },
