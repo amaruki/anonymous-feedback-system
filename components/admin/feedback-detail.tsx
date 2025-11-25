@@ -116,8 +116,6 @@ export function FeedbackDetail({ feedback, onBack, onUpdate }: Props) {
   }
 
   const displayTags = feedback.tagNames || []
-  const hasAiAnalysis = feedback.aiSummary || feedback.aiSentiment || feedback.aiActionItems?.length
-
   return (
     <div className="space-y-6">
       {/* Back Button & Header */}
@@ -159,23 +157,7 @@ export function FeedbackDetail({ feedback, onBack, onUpdate }: Props) {
                 </Badge>
                 <Badge variant="outline">{feedback.categoryLabel || feedback.categoryName || "Uncategorized"}</Badge>
                 <Badge className={URGENCY_COLORS[feedback.urgency]}>{feedback.urgency} priority</Badge>
-                {feedback.aiSentiment && (
-                  <Badge className={SENTIMENT_COLORS[feedback.aiSentiment]}>
-                    <Sparkles className="w-3 h-3 mr-1" />
-                    {feedback.aiSentiment}
-                  </Badge>
-                )}
               </div>
-
-              {/* AI Summary */}
-              {feedback.aiSummary && (
-                <div className="bg-gradient-to-r from-indigo-50 to-purple-50 border border-indigo-100 rounded-lg p-4">
-                  <Label className="text-xs text-indigo-700 uppercase flex items-center gap-1 mb-2">
-                    <Brain className="w-3 h-3" /> AI Summary
-                  </Label>
-                  <p className="text-slate-700">{feedback.aiSummary}</p>
-                </div>
-              )}
 
               {/* Description */}
               <div>
@@ -246,63 +228,6 @@ export function FeedbackDetail({ feedback, onBack, onUpdate }: Props) {
               )}
             </CardContent>
           </Card>
-
-          {/* AI Analysis Card */}
-          {hasAiAnalysis && (
-            <Card className="border-indigo-200 bg-gradient-to-br from-white to-indigo-50/30">
-              <CardHeader>
-                <CardTitle className="text-lg flex items-center gap-2">
-                  <Brain className="w-5 h-5 text-indigo-600" />
-                  AI Analysis
-                </CardTitle>
-                <CardDescription>Automatically generated insights and recommendations</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                {/* AI Suggestions vs User Selection */}
-                {(feedback.aiCategorySuggestion || feedback.aiUrgencySuggestion) && (
-                  <div className="grid grid-cols-2 gap-4">
-                    {feedback.aiCategorySuggestion && feedback.aiCategorySuggestion !== feedback.categoryName && (
-                      <div className="p-3 bg-white rounded-lg border">
-                        <Label className="text-xs text-slate-500">AI Suggested Category</Label>
-                        <p className="font-medium text-indigo-600 mt-1">{feedback.aiCategorySuggestion}</p>
-                        <p className="text-xs text-slate-400 mt-1">
-                          User selected: {feedback.categoryLabel || feedback.categoryName}
-                        </p>
-                      </div>
-                    )}
-                    {feedback.aiUrgencySuggestion && feedback.aiUrgencySuggestion !== feedback.urgency && (
-                      <div className="p-3 bg-white rounded-lg border">
-                        <Label className="text-xs text-slate-500">AI Suggested Urgency</Label>
-                        <Badge className={URGENCY_COLORS[feedback.aiUrgencySuggestion]}>
-                          {feedback.aiUrgencySuggestion}
-                        </Badge>
-                        <p className="text-xs text-slate-400 mt-1">User selected: {feedback.urgency}</p>
-                      </div>
-                    )}
-                  </div>
-                )}
-
-                {/* Action Items */}
-                {feedback.aiActionItems && feedback.aiActionItems.length > 0 && (
-                  <div>
-                    <Label className="text-xs text-slate-500 uppercase flex items-center gap-1 mb-2">
-                      <ListChecks className="w-3 h-3" /> Suggested Action Items
-                    </Label>
-                    <ul className="space-y-2">
-                      {feedback.aiActionItems.map((item, idx) => (
-                        <li key={idx} className="flex items-start gap-2 p-2 bg-white rounded border">
-                          <span className="w-5 h-5 rounded-full bg-indigo-100 text-indigo-600 text-xs flex items-center justify-center flex-shrink-0 mt-0.5">
-                            {idx + 1}
-                          </span>
-                          <span className="text-sm text-slate-700">{item}</span>
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-          )}
 
           {/* Clarifications */}
           <Card>

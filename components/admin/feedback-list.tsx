@@ -58,8 +58,7 @@ export function FeedbackList({ feedback, isLoading, onSelect }: Props) {
     const matchesSearch =
       search === "" ||
       f.subject.toLowerCase().includes(search.toLowerCase()) ||
-      f.description.toLowerCase().includes(search.toLowerCase()) ||
-      (f.aiSummary && f.aiSummary.toLowerCase().includes(search.toLowerCase()))
+      f.description.toLowerCase().includes(search.toLowerCase()) 
 
     const matchesCategory = categoryFilter === "all" || f.categoryName === categoryFilter
     const matchesStatus = statusFilter === "all" || f.status === statusFilter
@@ -176,9 +175,7 @@ export function FeedbackList({ feedback, isLoading, onSelect }: Props) {
                       <div className="flex items-center gap-2 mb-2">
                         {getStatusIcon(entry.status)}
                         <h4 className="font-medium text-slate-900 truncate">{entry.subject}</h4>
-                        {entry.aiSummary && <Brain className="w-4 h-4 text-indigo-500" title="AI analyzed" />}
                       </div>
-                      <p className="text-sm text-slate-600 line-clamp-2 mb-3">{entry.aiSummary || entry.description}</p>
                       <div className="flex flex-wrap gap-2">
                         <Badge className={STATUS_COLORS[entry.status]} variant="secondary">
                           {entry.status}
@@ -190,12 +187,6 @@ export function FeedbackList({ feedback, isLoading, onSelect }: Props) {
                         <Badge variant="outline" className="capitalize">
                           {entry.feedbackType}
                         </Badge>
-                        {entry.aiSentiment && (
-                          <Badge className={SENTIMENT_COLORS[entry.aiSentiment]} variant="secondary">
-                            <Sparkles className="w-3 h-3 mr-1" />
-                            {entry.aiSentiment}
-                          </Badge>
-                        )}
                         {entry.moderationStatus === "flagged" && (
                           <Badge className={MODERATION_COLORS.flagged} variant="secondary">
                             Flagged

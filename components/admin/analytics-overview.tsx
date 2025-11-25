@@ -65,9 +65,7 @@ export function AnalyticsOverview({ analytics, isLoading, detailed = false }: Pr
   const statusBreakdown = analytics.statusBreakdown ?? []
   const urgencyBreakdown = analytics.urgencyBreakdown ?? []
   const typeBreakdown = analytics.typeBreakdown ?? []
-  const sentimentBreakdown = analytics.sentimentBreakdown ?? []
   const dailyTrend = analytics.dailyTrend ?? []
-  const topKeywords = analytics.topKeywords ?? []
   const total = analytics.total ?? 0
   const resolutionRate = analytics.resolutionRate ?? 0
   const pending = analytics.pending ?? 0
@@ -152,7 +150,7 @@ export function AnalyticsOverview({ analytics, isLoading, detailed = false }: Pr
                       cx="50%"
                       cy="50%"
                       labelLine={false}
-                      label={({ name, percent }) => `${name} (${(percent * 100).toFixed(0)}%)`}
+                      label={({ name, percent }) => `${name} (${((percent || 0) * 100).toFixed(0)}%)`}
                       outerRadius={100}
                       fill="#8884d8"
                       dataKey="value"
@@ -248,49 +246,6 @@ export function AnalyticsOverview({ analytics, isLoading, detailed = false }: Pr
                 </CardContent>
               </Card>
             )}
-
-            {/* Sentiment Analysis */}
-            {sentimentBreakdown.length > 0 && (
-              <Card>
-                <CardHeader>
-                  <CardTitle className="text-lg flex items-center gap-2">
-                    <Brain className="w-5 h-5 text-purple-500" />
-                    AI Sentiment Analysis
-                  </CardTitle>
-                  <CardDescription>Emotional tone of feedback</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="h-[300px]">
-                    <ResponsiveContainer width="100%" height="100%">
-                      <PieChart>
-                        <Pie
-                          data={sentimentBreakdown}
-                          cx="50%"
-                          cy="50%"
-                          innerRadius={60}
-                          outerRadius={100}
-                          fill="#8884d8"
-                          paddingAngle={5}
-                          dataKey="value"
-                          label={({ name, percent }) => `${name} (${(percent * 100).toFixed(0)}%)`}
-                        >
-                          {sentimentBreakdown.map((entry, index) => (
-                            <Cell key={`cell-${index}`} fill={SENTIMENT_COLORS[entry.name] || CHART_COLORS[index]} />
-                          ))}
-                        </Pie>
-                        <Tooltip
-                          contentStyle={{
-                            backgroundColor: "white",
-                            border: "1px solid #e5e7eb",
-                            borderRadius: "8px",
-                          }}
-                        />
-                      </PieChart>
-                    </ResponsiveContainer>
-                  </div>
-                </CardContent>
-              </Card>
-            )}
           </div>
 
           {/* Trend Chart */}
@@ -331,37 +286,6 @@ export function AnalyticsOverview({ analytics, isLoading, detailed = false }: Pr
                       />
                     </LineChart>
                   </ResponsiveContainer>
-                </div>
-              </CardContent>
-            </Card>
-          )}
-
-          {/* Top Keywords */}
-          {topKeywords.length > 0 && (
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-lg flex items-center gap-2">
-                  <Sparkles className="w-5 h-5 text-amber-500" />
-                  Top Keywords
-                </CardTitle>
-                <CardDescription>Most frequently mentioned terms from AI analysis</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="flex flex-wrap gap-2">
-                  {topKeywords.map((kw, index) => (
-                    <Badge
-                      key={index}
-                      variant="secondary"
-                      className="text-sm py-1 px-3"
-                      style={{
-                        backgroundColor: `${CHART_COLORS[index % CHART_COLORS.length]}20`,
-                        color: CHART_COLORS[index % CHART_COLORS.length],
-                        borderColor: CHART_COLORS[index % CHART_COLORS.length],
-                      }}
-                    >
-                      {kw.word} ({kw.count})
-                    </Badge>
-                  ))}
                 </div>
               </CardContent>
             </Card>

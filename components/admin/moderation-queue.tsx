@@ -1,114 +1,134 @@
-"use client"
+"use client";
 
-import { useState, useEffect } from "react"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
-import { Badge } from "@/components/ui/badge"
-import { Textarea } from "@/components/ui/textarea"
-import { Checkbox } from "@/components/ui/checkbox"
-import { getFlaggedFeedback, updateModerationStatus, bulkApprove, bulkReject } from "@/app/actions/moderation"
-import type { FeedbackEntry } from "@/app/actions/feedback"
-import { ArrowLeft, Shield, AlertTriangle, CheckCircle2, XCircle, Loader2, Eye, Brain } from "lucide-react"
-import Link from "next/link"
+import { useState, useEffect } from "react";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Textarea } from "@/components/ui/textarea";
+import { Checkbox } from "@/components/ui/checkbox";
+import {
+  getFlaggedFeedback,
+  updateModerationStatus,
+  bulkApprove,
+  bulkReject,
+} from "@/app/actions/moderation";
+import type { FeedbackEntry } from "@/app/actions/feedback";
+import {
+  ArrowLeft,
+  Shield,
+  AlertTriangle,
+  CheckCircle2,
+  XCircle,
+  Loader2,
+  Eye,
+  Brain,
+} from "lucide-react";
+import Link from "next/link";
 
 export function ModerationQueue() {
-  const [feedback, setFeedback] = useState<FeedbackEntry[]>([])
-  const [isLoading, setIsLoading] = useState(true)
-  const [selectedItem, setSelectedItem] = useState<FeedbackEntry | null>(null)
-  const [rejectionReason, setRejectionReason] = useState("")
-  const [isUpdating, setIsUpdating] = useState(false)
-  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
-  const [bulkRejectionReason, setBulkRejectionReason] = useState("")
+  const [feedback, setFeedback] = useState<FeedbackEntry[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [selectedItem, setSelectedItem] = useState<FeedbackEntry | null>(null);
+  const [rejectionReason, setRejectionReason] = useState("");
+  const [isUpdating, setIsUpdating] = useState(false);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [bulkRejectionReason, setBulkRejectionReason] = useState("");
 
   const loadData = async () => {
-    setIsLoading(true)
+    setIsLoading(true);
     try {
-      const data = await getFlaggedFeedback()
-      setFeedback(data)
+      const data = await getFlaggedFeedback();
+      setFeedback(data);
     } catch (error) {
-      console.error("[v0] Error loading moderation queue:", error)
+      console.error("[v0] Error loading moderation queue:", error);
     } finally {
-      setIsLoading(false)
+      setIsLoading(false);
     }
-  }
+  };
 
   useEffect(() => {
-    loadData()
-  }, [])
+    loadData();
+  }, []);
 
   const handleApprove = async (id: string) => {
-    setIsUpdating(true)
+    setIsUpdating(true);
     try {
-      await updateModerationStatus(id, "approved")
-      await loadData()
-      setSelectedItem(null)
+      await updateModerationStatus(id, "approved");
+      await loadData();
+      setSelectedItem(null);
     } catch (error) {
-      console.error("[v0] Error approving:", error)
+      console.error("[v0] Error approving:", error);
     } finally {
-      setIsUpdating(false)
+      setIsUpdating(false);
     }
-  }
+  };
 
   const handleReject = async (id: string) => {
-    setIsUpdating(true)
+    setIsUpdating(true);
     try {
-      await updateModerationStatus(id, "rejected", rejectionReason)
-      setRejectionReason("")
-      await loadData()
-      setSelectedItem(null)
+      await updateModerationStatus(id, "rejected", rejectionReason);
+      setRejectionReason("");
+      await loadData();
+      setSelectedItem(null);
     } catch (error) {
-      console.error("[v0] Error rejecting:", error)
+      console.error("[v0] Error rejecting:", error);
     } finally {
-      setIsUpdating(false)
+      setIsUpdating(false);
     }
-  }
+  };
 
   const handleBulkApprove = async () => {
-    if (selectedIds.size === 0) return
-    setIsUpdating(true)
+    if (selectedIds.size === 0) return;
+    setIsUpdating(true);
     try {
-      await bulkApprove(Array.from(selectedIds))
-      setSelectedIds(new Set())
-      await loadData()
+      await bulkApprove(Array.from(selectedIds));
+      setSelectedIds(new Set());
+      await loadData();
     } catch (error) {
-      console.error("[v0] Error bulk approving:", error)
+      console.error("[v0] Error bulk approving:", error);
     } finally {
-      setIsUpdating(false)
+      setIsUpdating(false);
     }
-  }
+  };
 
   const handleBulkReject = async () => {
-    if (selectedIds.size === 0 || !bulkRejectionReason.trim()) return
-    setIsUpdating(true)
+    if (selectedIds.size === 0 || !bulkRejectionReason.trim()) return;
+    setIsUpdating(true);
     try {
-      await bulkReject(Array.from(selectedIds), bulkRejectionReason)
-      setSelectedIds(new Set())
-      setBulkRejectionReason("")
-      await loadData()
+      await bulkReject(Array.from(selectedIds), bulkRejectionReason);
+      setSelectedIds(new Set());
+      setBulkRejectionReason("");
+      await loadData();
     } catch (error) {
-      console.error("[v0] Error bulk rejecting:", error)
+      console.error("[v0] Error bulk rejecting:", error);
     } finally {
-      setIsUpdating(false)
+      setIsUpdating(false);
     }
-  }
+  };
 
   const toggleSelection = (id: string) => {
-    const newSet = new Set(selectedIds)
+    const newSet = new Set(selectedIds);
     if (newSet.has(id)) {
-      newSet.delete(id)
+      newSet.delete(id);
     } else {
-      newSet.add(id)
+      newSet.add(id);
     }
-    setSelectedIds(newSet)
-  }
+    setSelectedIds(newSet);
+  };
 
   const selectAll = () => {
     if (selectedIds.size === feedback.length) {
-      setSelectedIds(new Set())
+      setSelectedIds(new Set());
     } else {
-      setSelectedIds(new Set(feedback.map((f) => f.id)))
+      setSelectedIds(new Set(feedback.map((f) => f.id)));
     }
-  }
+  };
 
   const getModerationBadge = (status: string) => {
     switch (status) {
@@ -117,40 +137,42 @@ export function ModerationQueue() {
           <Badge className="bg-red-100 text-red-700">
             <AlertTriangle className="w-3 h-3 mr-1" /> Flagged
           </Badge>
-        )
+        );
       case "pending":
         return (
           <Badge className="bg-amber-100 text-amber-700">
             <Eye className="w-3 h-3 mr-1" /> Pending Review
           </Badge>
-        )
+        );
       case "approved":
         return (
           <Badge className="bg-emerald-100 text-emerald-700">
             <CheckCircle2 className="w-3 h-3 mr-1" /> Approved
           </Badge>
-        )
+        );
       case "rejected":
         return (
           <Badge className="bg-slate-100 text-slate-700">
             <XCircle className="w-3 h-3 mr-1" /> Rejected
           </Badge>
-        )
+        );
       default:
-        return null
+        return null;
     }
-  }
+  };
 
   const getSentimentBadge = (sentiment: string | null) => {
-    if (!sentiment) return null
+    if (!sentiment) return null;
     const colors: Record<string, string> = {
       positive: "bg-emerald-100 text-emerald-700",
       negative: "bg-red-100 text-red-700",
       neutral: "bg-slate-100 text-slate-700",
       mixed: "bg-amber-100 text-amber-700",
-    }
-    return <Badge className={colors[sentiment] || colors.neutral}>{sentiment}</Badge>
-  }
+    };
+    return (
+      <Badge className={colors[sentiment] || colors.neutral}>{sentiment}</Badge>
+    );
+  };
 
   return (
     <div className="min-h-screen bg-slate-50">
@@ -159,7 +181,10 @@ export function ModerationQueue() {
         <div className="container mx-auto px-4">
           <div className="flex items-center justify-between h-16">
             <div className="flex items-center gap-4">
-              <Link href="/admin" className="text-slate-600 hover:text-slate-900">
+              <Link
+                href="/admin"
+                className="text-slate-600 hover:text-slate-900"
+              >
                 <ArrowLeft className="w-5 h-5" />
               </Link>
               <div className="flex items-center gap-3">
@@ -167,8 +192,12 @@ export function ModerationQueue() {
                   <Shield className="w-5 h-5 text-amber-600" />
                 </div>
                 <div>
-                  <h1 className="font-semibold text-slate-900">Moderation Queue</h1>
-                  <p className="text-xs text-slate-500">{feedback.length} items need review</p>
+                  <h1 className="font-semibold text-slate-900">
+                    Moderation Queue
+                  </h1>
+                  <p className="text-xs text-slate-500">
+                    {feedback.length} items need review
+                  </p>
                 </div>
               </div>
             </div>
@@ -184,7 +213,11 @@ export function ModerationQueue() {
         ) : selectedItem ? (
           // Detail View
           <div className="max-w-3xl mx-auto space-y-6">
-            <Button variant="ghost" onClick={() => setSelectedItem(null)} className="gap-2">
+            <Button
+              variant="ghost"
+              onClick={() => setSelectedItem(null)}
+              className="gap-2"
+            >
               <ArrowLeft className="w-4 h-4" />
               Back to Queue
             </Button>
@@ -194,7 +227,10 @@ export function ModerationQueue() {
                 <div className="flex items-start justify-between">
                   <div>
                     <CardTitle>{selectedItem.subject}</CardTitle>
-                    <CardDescription>Submitted on {new Date(selectedItem.createdAt).toLocaleString()}</CardDescription>
+                    <CardDescription>
+                      Submitted on{" "}
+                      {new Date(selectedItem.createdAt).toLocaleString()}
+                    </CardDescription>
                   </div>
                   {getModerationBadge(selectedItem.moderationStatus)}
                 </div>
@@ -217,54 +253,35 @@ export function ModerationQueue() {
                   </div>
                 )}
 
-                {/* AI Analysis */}
-                {selectedItem.aiSummary && (
-                  <div className="bg-purple-50 border border-purple-200 rounded-lg p-4">
-                    <h4 className="font-medium text-purple-800 flex items-center gap-2 mb-2">
-                      <Brain className="w-4 h-4" />
-                      AI Analysis
-                    </h4>
-                    <p className="text-sm text-purple-700 mb-3">{selectedItem.aiSummary}</p>
-                    <div className="flex flex-wrap gap-2">
-                      {selectedItem.aiCategory && (
-                        <Badge className="bg-purple-100 text-purple-700">Category: {selectedItem.aiCategory}</Badge>
-                      )}
-                      {getSentimentBadge(selectedItem.aiSentiment)}
-                      {selectedItem.aiPriority && (
-                        <Badge className="bg-purple-100 text-purple-700">Priority: {selectedItem.aiPriority}</Badge>
-                      )}
-                    </div>
-                    {selectedItem.aiKeywords && selectedItem.aiKeywords.length > 0 && (
-                      <div className="mt-3 flex flex-wrap gap-1">
-                        {selectedItem.aiKeywords.map((kw) => (
-                          <Badge key={kw} variant="outline" className="text-xs">
-                            {kw}
-                          </Badge>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                )}
-
                 {/* Content */}
                 <div>
-                  <h4 className="text-xs text-slate-500 uppercase mb-2">Description</h4>
+                  <h4 className="text-xs text-slate-500 uppercase mb-2">
+                    Description
+                  </h4>
                   <div className="bg-slate-50 rounded-lg p-4">
-                    <p className="text-slate-700 whitespace-pre-wrap">{selectedItem.description}</p>
+                    <p className="text-slate-700 whitespace-pre-wrap">
+                      {selectedItem.description}
+                    </p>
                   </div>
                 </div>
 
                 {selectedItem.impact && (
                   <div>
-                    <h4 className="text-xs text-slate-500 uppercase mb-2">Impact</h4>
+                    <h4 className="text-xs text-slate-500 uppercase mb-2">
+                      Impact
+                    </h4>
                     <p className="text-slate-700">{selectedItem.impact}</p>
                   </div>
                 )}
 
                 {selectedItem.suggestedSolution && (
                   <div>
-                    <h4 className="text-xs text-slate-500 uppercase mb-2">Suggested Solution</h4>
-                    <p className="text-slate-700">{selectedItem.suggestedSolution}</p>
+                    <h4 className="text-xs text-slate-500 uppercase mb-2">
+                      Suggested Solution
+                    </h4>
+                    <p className="text-slate-700">
+                      {selectedItem.suggestedSolution}
+                    </p>
                   </div>
                 )}
 
@@ -274,7 +291,9 @@ export function ModerationQueue() {
                   <Badge variant="outline" className="capitalize">
                     {selectedItem.feedbackType}
                   </Badge>
-                  <Badge variant="outline">{selectedItem.urgency} priority</Badge>
+                  <Badge variant="outline">
+                    {selectedItem.urgency} priority
+                  </Badge>
                 </div>
 
                 {/* Actions */}
@@ -287,7 +306,11 @@ export function ModerationQueue() {
                       disabled={isUpdating}
                       className="flex-1 bg-emerald-600 hover:bg-emerald-700 gap-2"
                     >
-                      {isUpdating ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle2 className="w-4 h-4" />}
+                      {isUpdating ? (
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                      ) : (
+                        <CheckCircle2 className="w-4 h-4" />
+                      )}
                       Approve
                     </Button>
                     <Button
@@ -296,7 +319,11 @@ export function ModerationQueue() {
                       disabled={isUpdating || !rejectionReason.trim()}
                       className="flex-1 gap-2"
                     >
-                      {isUpdating ? <Loader2 className="w-4 h-4 animate-spin" /> : <XCircle className="w-4 h-4" />}
+                      {isUpdating ? (
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                      ) : (
+                        <XCircle className="w-4 h-4" />
+                      )}
                       Reject
                     </Button>
                   </div>
@@ -321,11 +348,16 @@ export function ModerationQueue() {
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-4">
                       <Checkbox
-                        checked={selectedIds.size === feedback.length && feedback.length > 0}
+                        checked={
+                          selectedIds.size === feedback.length &&
+                          feedback.length > 0
+                        }
                         onCheckedChange={selectAll}
                       />
                       <span className="text-sm text-slate-600">
-                        {selectedIds.size > 0 ? `${selectedIds.size} selected` : "Select all"}
+                        {selectedIds.size > 0
+                          ? `${selectedIds.size} selected`
+                          : "Select all"}
                       </span>
                     </div>
                     {selectedIds.size > 0 && (
@@ -336,14 +368,18 @@ export function ModerationQueue() {
                           disabled={isUpdating}
                           className="bg-emerald-600 hover:bg-emerald-700"
                         >
-                          {isUpdating ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
+                          {isUpdating ? (
+                            <Loader2 className="w-4 h-4 animate-spin mr-2" />
+                          ) : null}
                           Approve Selected
                         </Button>
                         <div className="flex items-center gap-2">
                           <Textarea
                             placeholder="Rejection reason..."
                             value={bulkRejectionReason}
-                            onChange={(e) => setBulkRejectionReason(e.target.value)}
+                            onChange={(e) =>
+                              setBulkRejectionReason(e.target.value)
+                            }
                             className="h-9 min-h-0 w-48 resize-none py-2"
                           />
                           <Button
@@ -366,13 +402,20 @@ export function ModerationQueue() {
               <Card>
                 <CardContent className="py-12 text-center">
                   <CheckCircle2 className="w-12 h-12 mx-auto mb-4 text-emerald-500" />
-                  <h3 className="text-lg font-medium text-slate-900 mb-2">All Caught Up!</h3>
-                  <p className="text-slate-600">No items currently require moderation review.</p>
+                  <h3 className="text-lg font-medium text-slate-900 mb-2">
+                    All Caught Up!
+                  </h3>
+                  <p className="text-slate-600">
+                    No items currently require moderation review.
+                  </p>
                 </CardContent>
               </Card>
             ) : (
               feedback.map((item) => (
-                <Card key={item.id} className="hover:border-slate-300 transition-colors">
+                <Card
+                  key={item.id}
+                  className="hover:border-slate-300 transition-colors"
+                >
                   <CardContent className="pt-6">
                     <div className="flex items-start gap-4">
                       <Checkbox
@@ -380,38 +423,33 @@ export function ModerationQueue() {
                         onCheckedChange={() => toggleSelection(item.id)}
                         onClick={(e) => e.stopPropagation()}
                       />
-                      <div className="flex-1 min-w-0 cursor-pointer" onClick={() => setSelectedItem(item)}>
+                      <div
+                        className="flex-1 min-w-0 cursor-pointer"
+                        onClick={() => setSelectedItem(item)}
+                      >
                         <div className="flex items-center gap-2 mb-2">
                           {getModerationBadge(item.moderationStatus)}
-                          <h3 className="font-medium text-slate-900 truncate">{item.subject}</h3>
+                          <h3 className="font-medium text-slate-900 truncate">
+                            {item.subject}
+                          </h3>
                         </div>
-                        <p className="text-sm text-slate-600 line-clamp-2 mb-3">{item.description}</p>
+                        <p className="text-sm text-slate-600 line-clamp-2 mb-3">
+                          {item.description}
+                        </p>
 
                         {item.moderationFlags.length > 0 && (
                           <div className="flex flex-wrap gap-1 mb-3">
                             {item.moderationFlags.map((flag) => (
-                              <Badge key={flag} variant="outline" className="text-xs text-red-600 border-red-200">
+                              <Badge
+                                key={flag}
+                                variant="outline"
+                                className="text-xs text-red-600 border-red-200"
+                              >
                                 {flag.replace(/_/g, " ")}
                               </Badge>
                             ))}
                           </div>
                         )}
-
-                        {/* AI Summary Preview */}
-                        {item.aiSummary && (
-                          <div className="flex items-center gap-2 mb-3 text-xs text-purple-600">
-                            <Brain className="w-3 h-3" />
-                            <span className="truncate">{item.aiSummary}</span>
-                          </div>
-                        )}
-
-                        <div className="flex flex-wrap gap-2">
-                          <Badge variant="outline">{item.category}</Badge>
-                          <Badge variant="outline" className="capitalize">
-                            {item.feedbackType}
-                          </Badge>
-                          {item.aiSentiment && getSentimentBadge(item.aiSentiment)}
-                        </div>
                       </div>
                       <div className="text-right text-xs text-slate-500">
                         {new Date(item.createdAt).toLocaleDateString()}
@@ -425,5 +463,5 @@ export function ModerationQueue() {
         )}
       </main>
     </div>
-  )
+  );
 }
