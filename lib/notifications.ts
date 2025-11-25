@@ -17,22 +17,9 @@ export async function sendNotification(eventType: NotificationEvent, data: Notif
     const settings = await db.notifications.getAll()
 
     for (const setting of settings) {
-      if (!setting.is_enabled) continue
+      if (!setting.isEnabled) continue
 
-      const shouldNotify =
-        (eventType === "new_feedback" && setting.notify_on_new_feedback) ||
-        (eventType === "urgent_feedback" && setting.notify_on_urgent) ||
-        (eventType === "clarification_response" && setting.notify_on_clarification_response)
-
-      if (!shouldNotify) continue
-
-      if (eventType === "new_feedback" && data.urgency && ["high", "critical"].includes(data.urgency)) {
-        if (setting.notify_on_urgent) {
-          await dispatchNotification(setting.notification_type, setting.config, "urgent_feedback", data)
-        }
-      }
-
-      await dispatchNotification(setting.notification_type, setting.config, eventType, data)
+      await dispatchNotification(setting.notificationType, setting.config, eventType, data)
     }
   } catch (error) {
     console.error("[v0] Error sending notification:", error)
@@ -49,10 +36,10 @@ async function dispatchNotification(
 
   switch (type) {
     case "telegram":
-      await sendTelegramNotification(cfg.bot_token, cfg.chat_id, eventType, data)
+      await sendTelegramNotification(cfg.botToken || cfg.bot_token, cfg.chatId || cfg.chat_id, eventType, data)
       break
     case "slack":
-      await sendSlackNotification(cfg.webhook_url, eventType, data)
+      await sendSlackNotification(cfg.webhookUrl || cfg.webhook_url, eventType, data)
       break
     case "webhook":
       await sendWebhookNotification(cfg.url, eventType, data)

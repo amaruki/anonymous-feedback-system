@@ -1,5 +1,6 @@
 import { getBrandingSettings } from "@/app/actions/config"
 import { FeedbackForm } from "@/components/feedback/feedback-form"
+import { SiteHeader } from "@/components/layout/site-header"
 import { Shield, Lock, Eye, MessageSquare } from "lucide-react"
 
 export default async function HomePage() {
@@ -9,6 +10,7 @@ export default async function HomePage() {
 
   return (
     <main className="min-h-screen bg-gradient-to-b from-slate-50 to-slate-100">
+      <SiteHeader />
       <div className="container mx-auto px-4 py-12">
         {/* Header */}
         <div className="text-center mb-12">

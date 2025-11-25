@@ -103,6 +103,9 @@ CREATE TABLE IF NOT EXISTS feedback (
   ai_action_items TEXT[],
   admin_notes TEXT[] DEFAULT '{}',
   resolved_at TIMESTAMPTZ,
+  -- Reporter notification preferences
+  reporter_notification_type TEXT CHECK (reporter_notification_type IN ('email', 'telegram')),
+  reporter_notification_contact TEXT,
   created_at TIMESTAMPTZ DEFAULT now(),
   updated_at TIMESTAMPTZ DEFAULT now()
 );
@@ -160,66 +163,88 @@ ALTER TABLE feedback_responses ENABLE ROW LEVEL SECURITY;
 ALTER TABLE clarifications ENABLE ROW LEVEL SECURITY;
 ALTER TABLE admin_users ENABLE ROW LEVEL SECURITY;
 
--- RLS Policies
-
--- Categories: Public read, admin write
+-- Drop existing policies before recreating to avoid "already exists" errors
+-- RLS Policies for Categories
+DROP POLICY IF EXISTS "categories_public_read" ON categories;
+DROP POLICY IF EXISTS "categories_admin_all" ON categories;
 CREATE POLICY "categories_public_read" ON categories FOR SELECT USING (is_active = true);
 CREATE POLICY "categories_admin_all" ON categories FOR ALL USING (
   EXISTS (SELECT 1 FROM admin_users WHERE id = auth.uid() AND is_active = true)
 );
 
--- Tags: Public read, admin write
+-- RLS Policies for Tags
+DROP POLICY IF EXISTS "tags_public_read" ON tags;
+DROP POLICY IF EXISTS "tags_admin_all" ON tags;
 CREATE POLICY "tags_public_read" ON tags FOR SELECT USING (is_active = true);
 CREATE POLICY "tags_admin_all" ON tags FOR ALL USING (
   EXISTS (SELECT 1 FROM admin_users WHERE id = auth.uid() AND is_active = true)
 );
 
--- Questions: Public read active, admin write
+-- RLS Policies for Questions
+DROP POLICY IF EXISTS "questions_public_read" ON questions;
+DROP POLICY IF EXISTS "questions_admin_all" ON questions;
 CREATE POLICY "questions_public_read" ON questions FOR SELECT USING (is_active = true);
 CREATE POLICY "questions_admin_all" ON questions FOR ALL USING (
   EXISTS (SELECT 1 FROM admin_users WHERE id = auth.uid() AND is_active = true)
 );
 
--- Branding: Public read, admin write
+-- RLS Policies for Branding
+DROP POLICY IF EXISTS "branding_public_read" ON branding_settings;
+DROP POLICY IF EXISTS "branding_admin_all" ON branding_settings;
 CREATE POLICY "branding_public_read" ON branding_settings FOR SELECT USING (true);
 CREATE POLICY "branding_admin_all" ON branding_settings FOR ALL USING (
   EXISTS (SELECT 1 FROM admin_users WHERE id = auth.uid() AND is_active = true)
 );
 
--- Notification settings: Admin only
+-- RLS Policies for Notification settings
+DROP POLICY IF EXISTS "notification_admin_all" ON notification_settings;
 CREATE POLICY "notification_admin_all" ON notification_settings FOR ALL USING (
   EXISTS (SELECT 1 FROM admin_users WHERE id = auth.uid() AND is_active = true)
 );
 
--- Feedback: Public insert (anonymous), admin read/update
+-- RLS Policies for Feedback
+DROP POLICY IF EXISTS "feedback_public_insert" ON feedback;
+DROP POLICY IF EXISTS "feedback_public_select_own" ON feedback;
+DROP POLICY IF EXISTS "feedback_admin_all" ON feedback;
 CREATE POLICY "feedback_public_insert" ON feedback FOR INSERT WITH CHECK (true);
-CREATE POLICY "feedback_public_select_own" ON feedback FOR SELECT USING (true); -- For access code lookup
+CREATE POLICY "feedback_public_select_own" ON feedback FOR SELECT USING (true);
 CREATE POLICY "feedback_admin_all" ON feedback FOR ALL USING (
   EXISTS (SELECT 1 FROM admin_users WHERE id = auth.uid() AND is_active = true)
 );
 
--- Feedback tags: Public insert, admin all
+-- RLS Policies for Feedback tags
+DROP POLICY IF EXISTS "feedback_tags_public_insert" ON feedback_tags;
+DROP POLICY IF EXISTS "feedback_tags_public_read" ON feedback_tags;
+DROP POLICY IF EXISTS "feedback_tags_admin_all" ON feedback_tags;
 CREATE POLICY "feedback_tags_public_insert" ON feedback_tags FOR INSERT WITH CHECK (true);
 CREATE POLICY "feedback_tags_public_read" ON feedback_tags FOR SELECT USING (true);
 CREATE POLICY "feedback_tags_admin_all" ON feedback_tags FOR ALL USING (
   EXISTS (SELECT 1 FROM admin_users WHERE id = auth.uid() AND is_active = true)
 );
 
--- Feedback responses: Public insert, admin read
+-- RLS Policies for Feedback responses
+DROP POLICY IF EXISTS "feedback_responses_public_insert" ON feedback_responses;
+DROP POLICY IF EXISTS "feedback_responses_public_read" ON feedback_responses;
+DROP POLICY IF EXISTS "feedback_responses_admin_all" ON feedback_responses;
 CREATE POLICY "feedback_responses_public_insert" ON feedback_responses FOR INSERT WITH CHECK (true);
 CREATE POLICY "feedback_responses_public_read" ON feedback_responses FOR SELECT USING (true);
 CREATE POLICY "feedback_responses_admin_all" ON feedback_responses FOR ALL USING (
   EXISTS (SELECT 1 FROM admin_users WHERE id = auth.uid() AND is_active = true)
 );
 
--- Clarifications: Public insert response, admin manage
+-- RLS Policies for Clarifications
+DROP POLICY IF EXISTS "clarifications_public_read" ON clarifications;
+DROP POLICY IF EXISTS "clarifications_public_update" ON clarifications;
+DROP POLICY IF EXISTS "clarifications_admin_all" ON clarifications;
 CREATE POLICY "clarifications_public_read" ON clarifications FOR SELECT USING (true);
-CREATE POLICY "clarifications_public_update" ON clarifications FOR UPDATE USING (true); -- For responding
+CREATE POLICY "clarifications_public_update" ON clarifications FOR UPDATE USING (true);
 CREATE POLICY "clarifications_admin_all" ON clarifications FOR ALL USING (
   EXISTS (SELECT 1 FROM admin_users WHERE id = auth.uid() AND is_active = true)
 );
 
--- Admin users: Self read, super_admin manage
+-- RLS Policies for Admin users
+DROP POLICY IF EXISTS "admin_users_self_read" ON admin_users;
+DROP POLICY IF EXISTS "admin_users_super_admin_all" ON admin_users;
 CREATE POLICY "admin_users_self_read" ON admin_users FOR SELECT USING (id = auth.uid());
 CREATE POLICY "admin_users_super_admin_all" ON admin_users FOR ALL USING (
   EXISTS (SELECT 1 FROM admin_users WHERE id = auth.uid() AND role = 'super_admin' AND is_active = true)

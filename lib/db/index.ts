@@ -3,507 +3,439 @@ import { createClient } from "@supabase/supabase-js"
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
 const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!
 
-// Server-side client with service role key for admin operations
-export const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey, {
-  auth: {
-    autoRefreshToken: false,
-    persistSession: false,
-  },
-})
+export const supabase = createClient(supabaseUrl, supabaseServiceKey)
 
-// Type definitions for database tables
+// Utility to convert snake_case to camelCase
+function snakeToCamel(str: string): string {
+  return str.replace(/_([a-z])/g, (_, letter) => letter.toUpperCase())
+}
+
+// Convert object keys from snake_case to camelCase
+export function toCamelCase<T>(obj: Record<string, unknown>): T {
+  if (obj === null || typeof obj !== "object") return obj as T
+  if (Array.isArray(obj)) return obj.map((item) => toCamelCase(item)) as T
+
+  const result: Record<string, unknown> = {}
+  for (const key in obj) {
+    const camelKey = snakeToCamel(key)
+    const value = obj[key]
+    result[camelKey] =
+      value !== null && typeof value === "object" ? toCamelCase(value as Record<string, unknown>) : value
+  }
+  return result as T
+}
+
+// Convert object keys from camelCase to snake_case for inserts/updates
+function camelToSnake(str: string): string {
+  return str.replace(/[A-Z]/g, (letter) => `_${letter.toLowerCase()}`)
+}
+
+export function toSnakeCase<T extends Record<string, unknown>>(obj: T): Record<string, unknown> {
+  const result: Record<string, unknown> = {}
+  for (const key in obj) {
+    const snakeKey = camelToSnake(key)
+    result[snakeKey] = obj[key]
+  }
+  return result
+}
+
+// TypeScript interfaces with camelCase for app usage
 export interface Category {
   id: string
   name: string
   label: string
-  description: string | null
+  description?: string | null
   color: string
   icon: string
-  is_active: boolean
-  sort_order: number
-  created_at: string
-  updated_at: string
+  isActive: boolean
+  sortOrder: number
+  createdAt: Date
+  updatedAt: Date
 }
 
 export interface Tag {
   id: string
   name: string
   color: string
-  is_active: boolean
-  sort_order: number
-  created_at: string
+  isActive: boolean
+  sortOrder: number
+  createdAt: Date
+  updatedAt: Date
 }
 
 export interface Question {
   id: string
-  question_type: "rating" | "multiple_choice" | "text" | "textarea"
-  question_text: string
-  description: string | null
-  options: string[] | null
-  is_required: boolean
-  is_active: boolean
-  sort_order: number
-  min_value: number | null
-  max_value: number | null
-  created_at: string
-  updated_at: string
+  questionText: string
+  questionType: "text" | "textarea" | "rating" | "select" | "multiselect" | "checkbox"
+  options?: string | null
+  isRequired: boolean
+  isActive: boolean
+  sortOrder: number
+  minValue?: number | null
+  maxValue?: number | null
+  placeholder?: string | null
+  createdAt: Date
+  updatedAt: Date
 }
 
 export interface BrandingSettings {
   id: string
-  site_name: string
-  site_description: string | null
-  logo_url: string | null
-  primary_color: string
-  secondary_color: string
-  accent_color: string
-  trust_badge_1_title: string
-  trust_badge_1_description: string | null
-  trust_badge_2_title: string
-  trust_badge_2_description: string | null
-  trust_badge_3_title: string
-  trust_badge_3_description: string | null
-  custom_css: string | null
-  updated_at: string
+  siteName: string
+  siteDescription?: string | null
+  logoUrl?: string | null
+  faviconUrl?: string | null
+  primaryColor: string
+  secondaryColor?: string | null
+  accentColor?: string | null
+  trustBadge1Title?: string | null
+  trustBadge1Description?: string | null
+  trustBadge2Title?: string | null
+  trustBadge2Description?: string | null
+  trustBadge3Title?: string | null
+  trustBadge3Description?: string | null
+  customCss?: string | null
+  createdAt: Date
+  updatedAt: Date
 }
 
 export interface NotificationSetting {
   id: string
-  notification_type: "email" | "slack" | "telegram" | "webhook"
-  is_enabled: boolean
+  notificationType: "email" | "slack" | "telegram" | "webhook"
+  isEnabled: boolean
   config: Record<string, unknown>
-  notify_on_new_feedback: boolean
-  notify_on_urgent: boolean
-  notify_on_clarification_response: boolean
-  notify_daily_digest: boolean
-  created_at: string
-  updated_at: string
+  createdAt: Date
+  updatedAt: Date
 }
 
 export interface Feedback {
   id: string
-  access_code_hash: string
-  category_id: string | null
-  feedback_type: "suggestion" | "concern" | "praise" | "question"
-  urgency: "low" | "medium" | "high" | "critical"
+  accessCode: string
+  accessCodeHash: string
+  categoryId?: string | null
+  feedbackType: string
+  urgency: string
   subject: string
   description: string
-  impact: string | null
-  suggested_solution: string | null
-  allow_follow_up: boolean
-  rating: number | null
-  status: "received" | "in-progress" | "resolved"
-  moderation_status: "pending" | "approved" | "flagged" | "rejected"
-  moderation_flags: string[]
-  moderation_score: number
-  keywords: string[]
-  ai_category: string | null
-  ai_sentiment: string | null
-  ai_priority: string | null
-  ai_summary: string | null
-  ai_keywords: string[] | null
-  ai_category_suggestion: string | null
-  ai_urgency_suggestion: string | null
-  ai_action_items: string[] | null
-  admin_notes: string[]
-  resolved_at: string | null
-  created_at: string
-  updated_at: string
-  // Joined fields
-  category?: Category
-  tags?: Tag[]
+  impact?: string | null
+  suggestedSolution?: string | null
+  status: "received" | "in_progress" | "resolved" | "rejected"
+  moderationStatus: "pending" | "approved" | "rejected" | "flagged"
+  moderationReason?: string | null
+  moderationScore?: number | null
+  aiCategoryId?: string | null
+  aiSentiment?: string | null
+  aiPriority?: string | null
+  aiKeywords?: string[] | null
+  aiSummary?: string | null
+  adminNotes?: string | null
+  resolvedAt?: Date | null
+  reporterNotificationType?: "email" | "telegram" | null
+  reporterNotificationContact?: string | null
+  createdAt: Date
+  updatedAt: Date
 }
 
 export interface FeedbackTag {
   id: string
-  feedback_id: string
-  tag_id: string
+  feedbackId: string
+  tagId: string
 }
 
 export interface FeedbackResponse {
   id: string
-  feedback_id: string
-  question_id: string
-  response_value: string | null
-  response_number: number | null
-  response_option: string | null
-  created_at: string
+  feedbackId: string
+  questionId: string
+  responseValue: string
+  createdAt: Date
 }
 
 export interface Clarification {
   id: string
-  feedback_id: string
+  feedbackId: string
   question: string
-  response: string | null
-  created_at: string
-  responded_at: string | null
+  response?: string | null
+  askedAt: Date
+  respondedAt?: Date | null
 }
 
 export interface AdminUser {
   id: string
   email: string
-  display_name: string | null
-  role: "admin" | "super_admin"
-  is_active: boolean
-  created_at: string
-  updated_at: string
+  name?: string | null
+  role: "admin" | "moderator" | "viewer"
+  createdAt: Date
+  updatedAt: Date
 }
 
 // Database helper functions
 export const db = {
   // Categories
   categories: {
-    async getAll() {
-      const { data, error } = await supabaseAdmin.from("categories").select("*").order("sort_order")
+    async getAll(): Promise<Category[]> {
+      const { data, error } = await supabase.from("categories").select("*").order("sort_order", { ascending: true })
       if (error) throw error
-      return data as Category[]
+      return (data || []).map((row) => toCamelCase<Category>(row))
     },
-    async getActive() {
-      const { data, error } = await supabaseAdmin
+    async getActive(): Promise<Category[]> {
+      const { data, error } = await supabase
         .from("categories")
         .select("*")
         .eq("is_active", true)
-        .order("sort_order")
+        .order("sort_order", { ascending: true })
       if (error) throw error
-      return data as Category[]
+      return (data || []).map((row) => toCamelCase<Category>(row))
     },
-    async create(category: Partial<Category>) {
-      const { data, error } = await supabaseAdmin.from("categories").insert(category).select().single()
+    async create(values: Partial<Category>): Promise<Category> {
+      const { data, error } = await supabase.from("categories").insert(toSnakeCase(values)).select().single()
       if (error) throw error
-      return data as Category
+      return toCamelCase<Category>(data)
     },
-    async update(id: string, category: Partial<Category>) {
-      const { data, error } = await supabaseAdmin
+    async update(id: string, values: Partial<Category>): Promise<void> {
+      const { error } = await supabase
         .from("categories")
-        .update({ ...category, updated_at: new Date().toISOString() })
+        .update({ ...toSnakeCase(values), updated_at: new Date().toISOString() })
         .eq("id", id)
-        .select()
-        .single()
       if (error) throw error
-      return data as Category
     },
-    async delete(id: string) {
-      const { error } = await supabaseAdmin.from("categories").delete().eq("id", id)
+    async delete(id: string): Promise<void> {
+      const { error } = await supabase.from("categories").delete().eq("id", id)
       if (error) throw error
     },
   },
 
   // Tags
   tags: {
-    async getAll() {
-      const { data, error } = await supabaseAdmin.from("tags").select("*").order("sort_order")
+    async getAll(): Promise<Tag[]> {
+      const { data, error } = await supabase.from("tags").select("*").order("sort_order", { ascending: true })
       if (error) throw error
-      return data as Tag[]
+      return (data || []).map((row) => toCamelCase<Tag>(row))
     },
-    async getActive() {
-      const { data, error } = await supabaseAdmin.from("tags").select("*").eq("is_active", true).order("sort_order")
+    async getActive(): Promise<Tag[]> {
+      const { data, error } = await supabase
+        .from("tags")
+        .select("*")
+        .eq("is_active", true)
+        .order("sort_order", { ascending: true })
       if (error) throw error
-      return data as Tag[]
+      return (data || []).map((row) => toCamelCase<Tag>(row))
     },
-    async create(tag: Partial<Tag>) {
-      const { data, error } = await supabaseAdmin.from("tags").insert(tag).select().single()
+    async create(values: Partial<Tag>): Promise<Tag> {
+      const { data, error } = await supabase.from("tags").insert(toSnakeCase(values)).select().single()
       if (error) throw error
-      return data as Tag
+      return toCamelCase<Tag>(data)
     },
-    async update(id: string, tag: Partial<Tag>) {
-      const { data, error } = await supabaseAdmin.from("tags").update(tag).eq("id", id).select().single()
+    async update(id: string, values: Partial<Tag>): Promise<void> {
+      const { error } = await supabase
+        .from("tags")
+        .update({ ...toSnakeCase(values), updated_at: new Date().toISOString() })
+        .eq("id", id)
       if (error) throw error
-      return data as Tag
     },
-    async delete(id: string) {
-      const { error } = await supabaseAdmin.from("tags").delete().eq("id", id)
+    async delete(id: string): Promise<void> {
+      const { error } = await supabase.from("tags").delete().eq("id", id)
       if (error) throw error
     },
   },
 
   // Questions
   questions: {
-    async getAll() {
-      const { data, error } = await supabaseAdmin.from("questions").select("*").order("sort_order")
+    async getAll(): Promise<Question[]> {
+      const { data, error } = await supabase.from("questions").select("*").order("sort_order", { ascending: true })
       if (error) throw error
-      return data as Question[]
+      return (data || []).map((row) => toCamelCase<Question>(row))
     },
-    async getActive() {
-      const { data, error } = await supabaseAdmin
+    async getActive(): Promise<Question[]> {
+      const { data, error } = await supabase
         .from("questions")
         .select("*")
         .eq("is_active", true)
-        .order("sort_order")
+        .order("sort_order", { ascending: true })
       if (error) throw error
-      return data as Question[]
+      return (data || []).map((row) => toCamelCase<Question>(row))
     },
-    async create(question: Partial<Question>) {
-      const { data, error } = await supabaseAdmin.from("questions").insert(question).select().single()
+    async create(values: Partial<Question>): Promise<Question> {
+      const { data, error } = await supabase.from("questions").insert(toSnakeCase(values)).select().single()
       if (error) throw error
-      return data as Question
+      return toCamelCase<Question>(data)
     },
-    async update(id: string, question: Partial<Question>) {
-      const { data, error } = await supabaseAdmin
+    async update(id: string, values: Partial<Question>): Promise<void> {
+      const { error } = await supabase
         .from("questions")
-        .update({ ...question, updated_at: new Date().toISOString() })
+        .update({ ...toSnakeCase(values), updated_at: new Date().toISOString() })
         .eq("id", id)
-        .select()
-        .single()
       if (error) throw error
-      return data as Question
     },
-    async delete(id: string) {
-      const { error } = await supabaseAdmin.from("questions").delete().eq("id", id)
+    async delete(id: string): Promise<void> {
+      const { error } = await supabase.from("questions").delete().eq("id", id)
       if (error) throw error
     },
   },
 
   // Branding
   branding: {
-    async get() {
-      const { data, error } = await supabaseAdmin.from("branding_settings").select("*").limit(1).single()
+    async get(): Promise<BrandingSettings | null> {
+      const { data, error } = await supabase.from("branding_settings").select("*").limit(1).single()
       if (error && error.code !== "PGRST116") throw error
-      return data as BrandingSettings | null
+      return data ? toCamelCase<BrandingSettings>(data) : null
     },
-    async upsert(settings: Partial<BrandingSettings>) {
+    async upsert(values: Partial<BrandingSettings>): Promise<BrandingSettings> {
       const existing = await this.get()
       if (existing) {
-        const { data, error } = await supabaseAdmin
+        const { data, error } = await supabase
           .from("branding_settings")
-          .update({ ...settings, updated_at: new Date().toISOString() })
+          .update({ ...toSnakeCase(values), updated_at: new Date().toISOString() })
           .eq("id", existing.id)
           .select()
           .single()
         if (error) throw error
-        return data as BrandingSettings
+        return toCamelCase<BrandingSettings>(data)
       } else {
-        const { data, error } = await supabaseAdmin.from("branding_settings").insert(settings).select().single()
+        const { data, error } = await supabase.from("branding_settings").insert(toSnakeCase(values)).select().single()
         if (error) throw error
-        return data as BrandingSettings
+        return toCamelCase<BrandingSettings>(data)
       }
     },
   },
 
-  // Notification Settings
+  // Notifications
   notifications: {
-    async getAll() {
-      const { data, error } = await supabaseAdmin.from("notification_settings").select("*")
+    async getAll(): Promise<NotificationSetting[]> {
+      const { data, error } = await supabase.from("notification_settings").select("*")
       if (error) throw error
-      return data as NotificationSetting[]
+      return (data || []).map((row) => toCamelCase<NotificationSetting>(row))
     },
-    async getByType(type: string) {
-      const { data, error } = await supabaseAdmin
+    async getByType(type: string): Promise<NotificationSetting | null> {
+      const { data, error } = await supabase
         .from("notification_settings")
         .select("*")
         .eq("notification_type", type)
         .single()
       if (error && error.code !== "PGRST116") throw error
-      return data as NotificationSetting | null
+      return data ? toCamelCase<NotificationSetting>(data) : null
     },
-    async upsert(type: string, settings: Partial<NotificationSetting>) {
-      const { data, error } = await supabaseAdmin
+    async upsert(values: Partial<NotificationSetting>): Promise<NotificationSetting> {
+      const snakeValues = toSnakeCase(values)
+      const { data, error } = await supabase
         .from("notification_settings")
-        .upsert(
-          { ...settings, notification_type: type, updated_at: new Date().toISOString() },
-          { onConflict: "notification_type" },
-        )
+        .upsert(snakeValues, { onConflict: "notification_type" })
         .select()
         .single()
       if (error) throw error
-      return data as NotificationSetting
+      return toCamelCase<NotificationSetting>(data)
+    },
+    async update(id: string, values: Partial<NotificationSetting>): Promise<void> {
+      const { error } = await supabase
+        .from("notification_settings")
+        .update({ ...toSnakeCase(values), updated_at: new Date().toISOString() })
+        .eq("id", id)
+      if (error) throw error
     },
   },
 
   // Feedback
   feedback: {
-    async getAll(options?: { status?: string; moderationStatus?: string; limit?: number }) {
-      let query = supabaseAdmin.from("feedback").select("*, category:categories(*)")
-
-      if (options?.status) {
-        query = query.eq("status", options.status)
-      }
-      if (options?.moderationStatus) {
-        query = query.eq("moderation_status", options.moderationStatus)
-      }
-      if (options?.limit) {
-        query = query.limit(options.limit)
-      }
-
-      const { data, error } = await query.order("created_at", { ascending: false })
+    async getAll(): Promise<Feedback[]> {
+      const { data, error } = await supabase.from("feedback").select("*").order("created_at", { ascending: false })
       if (error) throw error
-      return data as Feedback[]
+      return (data || []).map((row) => toCamelCase<Feedback>(row))
     },
-    async getById(id: string) {
-      const { data, error } = await supabaseAdmin
-        .from("feedback")
-        .select("*, category:categories(*)")
-        .eq("id", id)
-        .single()
-      if (error) throw error
-
-      // Get tags
-      const { data: tagData } = await supabaseAdmin.from("feedback_tags").select("tag:tags(*)").eq("feedback_id", id)
-
-      return {
-        ...data,
-        tags: tagData?.map((t: { tag: Tag }) => t.tag) || [],
-      } as Feedback
+    async getById(id: string): Promise<Feedback | null> {
+      const { data, error } = await supabase.from("feedback").select("*").eq("id", id).single()
+      if (error && error.code !== "PGRST116") throw error
+      return data ? toCamelCase<Feedback>(data) : null
     },
-    async getByAccessCodeHash(hash: string) {
-      const { data, error } = await supabaseAdmin
+    async getByAccessCode(accessCodeHash: string): Promise<Feedback | null> {
+      const { data, error } = await supabase
         .from("feedback")
-        .select("*, category:categories(*)")
-        .eq("access_code_hash", hash)
+        .select("*")
+        .eq("access_code_hash", accessCodeHash)
         .single()
       if (error && error.code !== "PGRST116") throw error
-
-      if (!data) return null
-
-      // Get tags
-      const { data: tagData } = await supabaseAdmin
-        .from("feedback_tags")
-        .select("tag:tags(*)")
-        .eq("feedback_id", data.id)
-
-      // Get clarifications
-      const { data: clarifications } = await supabaseAdmin
-        .from("clarifications")
+      return data ? toCamelCase<Feedback>(data) : null
+    },
+    async getByStatus(status: string): Promise<Feedback[]> {
+      const { data, error } = await supabase
+        .from("feedback")
         .select("*")
-        .eq("feedback_id", data.id)
-        .order("created_at", { ascending: true })
-
-      return {
-        ...data,
-        tags: tagData?.map((t: { tag: Tag }) => t.tag) || [],
-        clarifications: clarifications || [],
-      } as Feedback & { clarifications: Clarification[] }
-    },
-    async create(feedback: Partial<Feedback>, tagIds?: string[]) {
-      const { data, error } = await supabaseAdmin.from("feedback").insert(feedback).select().single()
+        .eq("status", status)
+        .order("created_at", { ascending: false })
       if (error) throw error
-
-      // Add tags
-      if (tagIds && tagIds.length > 0) {
-        await supabaseAdmin.from("feedback_tags").insert(
-          tagIds.map((tagId) => ({
-            feedback_id: data.id,
-            tag_id: tagId,
-          })),
-        )
-      }
-
-      return data as Feedback
+      return (data || []).map((row) => toCamelCase<Feedback>(row))
     },
-    async update(id: string, feedback: Partial<Feedback>) {
-      const { data, error } = await supabaseAdmin
+    async getByModerationStatus(status: string): Promise<Feedback[]> {
+      const { data, error } = await supabase
         .from("feedback")
-        .update({ ...feedback, updated_at: new Date().toISOString() })
+        .select("*")
+        .eq("moderation_status", status)
+        .order("created_at", { ascending: false })
+      if (error) throw error
+      return (data || []).map((row) => toCamelCase<Feedback>(row))
+    },
+    async create(values: Partial<Feedback>): Promise<Feedback> {
+      const { data, error } = await supabase.from("feedback").insert(toSnakeCase(values)).select().single()
+      if (error) throw error
+      return toCamelCase<Feedback>(data)
+    },
+    async update(id: string, values: Partial<Feedback>): Promise<void> {
+      const { error } = await supabase
+        .from("feedback")
+        .update({ ...toSnakeCase(values), updated_at: new Date().toISOString() })
         .eq("id", id)
-        .select()
-        .single()
-      if (error) throw error
-      return data as Feedback
-    },
-    async updateTags(feedbackId: string, tagIds: string[]) {
-      // Remove existing tags
-      await supabaseAdmin.from("feedback_tags").delete().eq("feedback_id", feedbackId)
-
-      // Add new tags
-      if (tagIds.length > 0) {
-        await supabaseAdmin.from("feedback_tags").insert(
-          tagIds.map((tagId) => ({
-            feedback_id: feedbackId,
-            tag_id: tagId,
-          })),
-        )
-      }
-    },
-    async delete(id: string) {
-      const { error } = await supabaseAdmin.from("feedback").delete().eq("id", id)
       if (error) throw error
     },
-    async getStats() {
-      const { data: all } = await supabaseAdmin
-        .from("feedback")
-        .select("status, urgency, moderation_status, ai_sentiment, category_id, created_at")
+  },
 
-      if (!all) return null
+  // Feedback Tags
+  feedbackTags: {
+    async getByFeedbackId(feedbackId: string): Promise<FeedbackTag[]> {
+      const { data, error } = await supabase.from("feedback_tags").select("*").eq("feedback_id", feedbackId)
+      if (error) throw error
+      return (data || []).map((row) => toCamelCase<FeedbackTag>(row))
+    },
+    async create(values: { feedbackId: string; tagId: string }): Promise<FeedbackTag> {
+      const { data, error } = await supabase.from("feedback_tags").insert(toSnakeCase(values)).select().single()
+      if (error) throw error
+      return toCamelCase<FeedbackTag>(data)
+    },
+    async deleteByFeedbackId(feedbackId: string): Promise<void> {
+      const { error } = await supabase.from("feedback_tags").delete().eq("feedback_id", feedbackId)
+      if (error) throw error
+    },
+  },
 
-      const total = all.length
-      const byStatus = {
-        received: all.filter((f) => f.status === "received").length,
-        "in-progress": all.filter((f) => f.status === "in-progress").length,
-        resolved: all.filter((f) => f.status === "resolved").length,
-      }
-      const byUrgency = {
-        low: all.filter((f) => f.urgency === "low").length,
-        medium: all.filter((f) => f.urgency === "medium").length,
-        high: all.filter((f) => f.urgency === "high").length,
-        critical: all.filter((f) => f.urgency === "critical").length,
-      }
-      const bySentiment = {
-        positive: all.filter((f) => f.ai_sentiment === "positive").length,
-        neutral: all.filter((f) => f.ai_sentiment === "neutral").length,
-        negative: all.filter((f) => f.ai_sentiment === "negative").length,
-        mixed: all.filter((f) => f.ai_sentiment === "mixed").length,
-      }
-      const pendingModeration = all.filter((f) => f.moderation_status === "pending").length
-
-      return { total, byStatus, byUrgency, bySentiment, pendingModeration }
+  // Feedback Responses
+  feedbackResponses: {
+    async getByFeedbackId(feedbackId: string): Promise<FeedbackResponse[]> {
+      const { data, error } = await supabase.from("feedback_responses").select("*").eq("feedback_id", feedbackId)
+      if (error) throw error
+      return (data || []).map((row) => toCamelCase<FeedbackResponse>(row))
+    },
+    async create(values: Partial<FeedbackResponse>): Promise<FeedbackResponse> {
+      const { data, error } = await supabase.from("feedback_responses").insert(toSnakeCase(values)).select().single()
+      if (error) throw error
+      return toCamelCase<FeedbackResponse>(data)
     },
   },
 
   // Clarifications
   clarifications: {
-    async getByFeedbackId(feedbackId: string) {
-      const { data, error } = await supabaseAdmin
+    async getByFeedbackId(feedbackId: string): Promise<Clarification[]> {
+      const { data, error } = await supabase
         .from("clarifications")
         .select("*")
         .eq("feedback_id", feedbackId)
-        .order("created_at", { ascending: true })
+        .order("asked_at", { ascending: true })
       if (error) throw error
-      return data as Clarification[]
+      return (data || []).map((row) => toCamelCase<Clarification>(row))
     },
-    async create(clarification: Partial<Clarification>) {
-      const { data, error } = await supabaseAdmin.from("clarifications").insert(clarification).select().single()
+    async create(values: Partial<Clarification>): Promise<Clarification> {
+      const { data, error } = await supabase.from("clarifications").insert(toSnakeCase(values)).select().single()
       if (error) throw error
-      return data as Clarification
+      return toCamelCase<Clarification>(data)
     },
-    async respond(id: string, response: string) {
-      const { data, error } = await supabaseAdmin
-        .from("clarifications")
-        .update({ response, responded_at: new Date().toISOString() })
-        .eq("id", id)
-        .select()
-        .single()
+    async update(id: string, values: Partial<Clarification>): Promise<void> {
+      const { error } = await supabase.from("clarifications").update(toSnakeCase(values)).eq("id", id)
       if (error) throw error
-      return data as Clarification
-    },
-  },
-
-  // Feedback Responses (question answers)
-  feedbackResponses: {
-    async getByFeedbackId(feedbackId: string) {
-      const { data, error } = await supabaseAdmin
-        .from("feedback_responses")
-        .select("*, question:questions(*)")
-        .eq("feedback_id", feedbackId)
-      if (error) throw error
-      return data as (FeedbackResponse & { question: Question })[]
-    },
-    async create(responses: Partial<FeedbackResponse>[]) {
-      const { data, error } = await supabaseAdmin.from("feedback_responses").insert(responses).select()
-      if (error) throw error
-      return data as FeedbackResponse[]
-    },
-  },
-
-  // Admin Users
-  adminUsers: {
-    async getByEmail(email: string) {
-      const { data, error } = await supabaseAdmin.from("admin_users").select("*").eq("email", email).single()
-      if (error && error.code !== "PGRST116") throw error
-      return data as AdminUser | null
-    },
-    async create(user: Partial<AdminUser>) {
-      const { data, error } = await supabaseAdmin.from("admin_users").insert(user).select().single()
-      if (error) throw error
-      return data as AdminUser
     },
   },
 }

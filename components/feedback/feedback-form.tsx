@@ -15,7 +15,7 @@ import { Slider } from "@/components/ui/slider"
 import { AlertCircle, CheckCircle2, Copy, ArrowRight, ArrowLeft, Loader2 } from "lucide-react"
 import { submitFeedback } from "@/app/actions/feedback"
 import { getActiveCategories, getActiveTags, getActiveQuestions } from "@/app/actions/config"
-import type { Category, Tag, Question } from "@/lib/db/schema"
+import type { Category, Tag, Question } from "@/lib/db"
 
 const URGENCY_LEVELS = [
   {
