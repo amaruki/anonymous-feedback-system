@@ -1,167 +1,157 @@
+import { GoogleGenAI } from "@google/genai"
+import { z } from "zod"
+
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY
-const GEMINI_API_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent"
 
-// Schema for feedback analysis response
-const feedbackAnalysisSchema = {
-  type: "object",
-  properties: {
-    suggestedCategory: {
-      type: "string",
-      description: "The most appropriate category for this feedback",
-    },
-    suggestedUrgency: {
-      type: "string",
-      enum: ["low", "medium", "high", "critical"],
-      description: "Suggested urgency level based on content",
-    },
-    sentiment: {
-      type: "string",
-      enum: ["positive", "neutral", "negative", "mixed"],
-      description: "Overall sentiment of the feedback",
-    },
-    summary: {
-      type: "string",
-      description: "A brief 1-2 sentence summary of the feedback",
-    },
-    actionItems: {
-      type: "array",
-      items: { type: "string" },
-      description: "Specific actionable items extracted from the feedback",
-    },
-    keyTopics: {
-      type: "array",
-      items: { type: "string" },
-      description: "Main topics or themes in the feedback",
-    },
-    isActionable: {
-      type: "boolean",
-      description: "Whether this feedback contains actionable suggestions",
-    },
-    suggestedTags: {
-      type: "array",
-      items: { type: "string" },
-      description: "Suggested tags based on content",
-    },
-  },
-  required: [
-    "suggestedCategory",
-    "suggestedUrgency",
-    "sentiment",
-    "summary",
-    "actionItems",
-    "keyTopics",
-    "isActionable",
-    "suggestedTags",
-  ],
+// --- Zod Schemas ---
+
+const feedbackAnalysisSchema = z.object({
+  suggestedCategory: z.string().describe("The most appropriate category for this feedback"),
+  suggestedUrgency: z
+    .enum(["low", "medium", "high", "critical"])
+    .describe("Suggested urgency level based on content"),
+  sentiment: z
+    .enum(["positive", "neutral", "negative", "mixed"])
+    .describe("Overall sentiment of the feedback"),
+  summary: z.string().describe("A brief 1-2 sentence summary of the feedback"),
+  actionItems: z.array(z.string()).describe("Specific actionable items extracted from the feedback"),
+  keyTopics: z.array(z.string()).describe("Main topics or themes in the feedback"),
+  isActionable: z.boolean().describe("Whether this feedback contains actionable suggestions"),
+  suggestedTags: z.array(z.string()).describe("Suggested tags based on content"),
+})
+
+const reportSchema = z.object({
+  executiveSummary: z.string().describe("Executive summary of overall feedback trends"),
+  keyThemes: z
+    .array(
+      z.object({
+        theme: z.string(),
+        frequency: z.number(),
+        sentiment: z.string(),
+      }),
+    )
+    .describe("Key themes with frequency and sentiment"),
+  urgentItems: z.array(z.string()).describe("Items requiring urgent attention"),
+  recommendations: z.array(z.string()).describe("Specific recommendations for improvement"),
+  trendAnalysis: z.string().describe("Trend analysis and patterns observed"),
+})
+
+export type FeedbackAnalysis = z.infer<typeof feedbackAnalysisSchema>
+type ReportAnalysis = z.infer<typeof reportSchema>
+
+// --- Helpers ---
+
+/**
+ * Cleans JSON string from Markdown code blocks often returned by LLMs
+ */
+function cleanJsonString(text: string): string {
+  const pattern = /^```json\s*(.*?)\s*```$/
+  const match = text.match(pattern)
+  return match ? match[1] : text
 }
 
-// Schema for report generation response
-const reportSchema = {
-  type: "object",
-  properties: {
-    executiveSummary: {
-      type: "string",
-      description: "Executive summary of overall feedback trends",
-    },
-    keyThemes: {
-      type: "array",
-      items: {
-        type: "object",
-        properties: {
-          theme: { type: "string" },
-          frequency: { type: "number" },
-          sentiment: { type: "string" },
-        },
-        required: ["theme", "frequency", "sentiment"],
+/**
+ * Converts Zod schema to Google's expected JSON Schema format.
+ * Note: For production apps, consider using the 'zod-to-json-schema' package.
+ */
+function zodToJsonSchema(zodSchema: z.ZodType): any {
+  if (zodSchema === feedbackAnalysisSchema) {
+    return {
+      type: "object",
+      properties: {
+        suggestedCategory: { type: "string", description: "The most appropriate category" },
+        suggestedUrgency: { type: "string", enum: ["low", "medium", "high", "critical"] },
+        sentiment: { type: "string", enum: ["positive", "neutral", "negative", "mixed"] },
+        summary: { type: "string" },
+        actionItems: { type: "array", items: { type: "string" } },
+        keyTopics: { type: "array", items: { type: "string" } },
+        isActionable: { type: "boolean" },
+        suggestedTags: { type: "array", items: { type: "string" } },
       },
-      description: "Key themes with frequency and sentiment",
-    },
-    urgentItems: {
-      type: "array",
-      items: { type: "string" },
-      description: "Items requiring urgent attention",
-    },
-    recommendations: {
-      type: "array",
-      items: { type: "string" },
-      description: "Specific recommendations for improvement",
-    },
-    trendAnalysis: {
-      type: "string",
-      description: "Trend analysis and patterns observed",
-    },
-  },
-  required: ["executiveSummary", "keyThemes", "urgentItems", "recommendations", "trendAnalysis"],
+      required: [
+        "suggestedCategory",
+        "suggestedUrgency",
+        "sentiment",
+        "summary",
+        "actionItems",
+        "keyTopics",
+        "isActionable",
+        "suggestedTags",
+      ],
+    }
+  } else {
+    return {
+      type: "object",
+      properties: {
+        executiveSummary: { type: "string" },
+        keyThemes: {
+          type: "array",
+          items: {
+            type: "object",
+            properties: {
+              theme: { type: "string" },
+              frequency: { type: "number" },
+              sentiment: { type: "string" },
+            },
+            required: ["theme", "frequency", "sentiment"],
+          },
+        },
+        urgentItems: { type: "array", items: { type: "string" } },
+        recommendations: { type: "array", items: { type: "string" } },
+        trendAnalysis: { type: "string" },
+      },
+      required: ["executiveSummary", "keyThemes", "urgentItems", "recommendations", "trendAnalysis"],
+    }
+  }
 }
 
-export interface FeedbackAnalysis {
-  suggestedCategory: string
-  suggestedUrgency: "low" | "medium" | "high" | "critical"
-  sentiment: "positive" | "neutral" | "negative" | "mixed"
-  summary: string
-  actionItems: string[]
-  keyTopics: string[]
-  isActionable: boolean
-  suggestedTags: string[]
-}
-
-interface ReportAnalysis {
-  executiveSummary: string
-  keyThemes: Array<{
-    theme: string
-    frequency: number
-    sentiment: string
-  }>
-  urgentItems: string[]
-  recommendations: string[]
-  trendAnalysis: string
-}
-
-async function callGemini<T>(prompt: string, schema: object): Promise<T | null> {
+async function callGemini<T extends z.ZodType>(
+  prompt: string,
+  zodSchema: T,
+): Promise<z.infer<T> | null> {
   if (!GEMINI_API_KEY) {
-    console.error("[v0] GEMINI_API_KEY is not configured")
+    console.error("[AI] GEMINI_API_KEY is not configured")
     return null
   }
 
   try {
-    const response = await fetch(`${GEMINI_API_URL}?key=${GEMINI_API_KEY}`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
+    const client = new GoogleGenAI({ apiKey: GEMINI_API_KEY })
+    
+    const result = await client.models.generateContent({
+      model: "gemini-2.5-flash", // Ensure you have access to this model, otherwise use "gemini-1.5-flash"
+      contents: [
+        {
+          parts: [
+            { text: prompt }
+          ]
+        }
+      ],
+      config: {
+        responseMimeType: "application/json",
+        responseSchema: zodToJsonSchema(zodSchema),
       },
-      body: JSON.stringify({
-        contents: [
-          {
-            parts: [{ text: prompt }],
-          },
-        ],
-        generationConfig: {
-          responseMimeType: "application/json",
-          responseSchema: schema,
-        },
-      }),
     })
 
-    if (!response.ok) {
-      const error = await response.text()
-      console.error("[v0] Gemini API error:", error)
+    const rawText = result.text || result.candidates?.[0]?.content?.parts?.[0]?.text
+
+    if (!rawText) {
+      console.error("[AI] No response text from Gemini")
       return null
     }
 
-    const data = await response.json()
-    const text = data.candidates?.[0]?.content?.parts?.[0]?.text
+    // Clean potential markdown backticks
+    const cleanedJson = cleanJsonString(rawText)
+    const parsed = JSON.parse(cleanedJson)
 
-    if (!text) {
-      console.error("[v0] No response from Gemini")
-      return null
-    }
-
-    return JSON.parse(text) as T
+    // Validate with Zod
+    return zodSchema.parse(parsed)
   } catch (error) {
-    console.error("[v0] Gemini API call failed:", error)
+    console.error("[AI] Gemini API call failed:", error)
     return null
   }
 }
+
+// --- Exported Functions ---
 
 export async function analyzeFeedback(
   subject: string,
@@ -172,42 +162,26 @@ export async function analyzeFeedback(
   availableTags?: string[],
 ): Promise<FeedbackAnalysis | null> {
   const categoryList = availableCategories?.length
-    ? `Available categories: ${availableCategories.join(", ")}`
-    : "Suggest an appropriate category name"
+    ? `Pick one category from this list: ${JSON.stringify(availableCategories)}`
+    : "Suggest a short, professional category name."
 
   const tagList = availableTags?.length
-    ? `Available tags to choose from: ${availableTags.join(", ")}`
-    : "Suggest relevant tags"
+    ? `Select relevant tags from this list: ${JSON.stringify(availableTags)}`
+    : "Suggest relevant tags."
 
-  const prompt = `Analyze the following anonymous feedback and provide structured analysis.
+  const prompt = `Analyze the following feedback.
 
 ${categoryList}
 ${tagList}
 
-FEEDBACK:
+FEEDBACK DATA:
 Subject: ${subject}
-
 Description: ${description}
-
 ${impact ? `Impact: ${impact}` : ""}
-
 ${suggestedSolution ? `Suggested Solution: ${suggestedSolution}` : ""}
+`
 
-Analyze this feedback and provide:
-1. The most appropriate category from the available options
-2. Suggested urgency level (low, medium, high, critical) based on:
-   - Critical: Safety issues, legal concerns, immediate business impact
-   - High: Significant employee wellbeing, major process failures
-   - Medium: Improvement opportunities, recurring issues
-   - Low: General suggestions, minor observations
-3. Overall sentiment
-4. A brief summary
-5. Specific action items (if any)
-6. Key topics/themes
-7. Whether it's actionable
-8. Relevant tags from the available options`
-
-  return callGemini<FeedbackAnalysis>(prompt, feedbackAnalysisSchema)
+  return callGemini(prompt, feedbackAnalysisSchema)
 }
 
 export async function generateFeedbackReport(
@@ -223,29 +197,18 @@ export async function generateFeedbackReport(
 ): Promise<string | null> {
   if (feedbackItems.length === 0) return null
 
-  const prompt = `Analyze the following collection of anonymous feedback items and generate a comprehensive report.
+  const prompt = `Analyze these feedback items and generate a report.
 
-FEEDBACK ITEMS:
+ITEMS:
 ${feedbackItems
   .map(
-    (f, i) => `
-${i + 1}. [${f.urgency.toUpperCase()}] ${f.category} - ${f.feedbackType}
-Subject: ${f.subject}
-Description: ${f.description}
-Status: ${f.status}
-Submitted: ${f.createdAt}
-`,
+    (f, i) =>
+      `${i + 1}. [${f.urgency}] ${f.category}: ${f.subject} - ${f.description}`,
   )
-  .join("\n---\n")}
+  .join("\n")}
+`
 
-Generate a report that includes:
-1. Executive summary of overall feedback trends
-2. Key themes with frequency and sentiment
-3. Items requiring urgent attention
-4. Specific recommendations for improvement
-5. Trend analysis and patterns observed`
-
-  const result = await callGemini<ReportAnalysis>(prompt, reportSchema)
+  const result = await callGemini(prompt, reportSchema)
 
   if (!result) return null
 
@@ -255,7 +218,9 @@ Generate a report that includes:
 ${result.executiveSummary}
 
 ## Key Themes
-${result.keyThemes.map((t) => `- **${t.theme}** (${t.frequency} mentions) - ${t.sentiment}`).join("\n")}
+${result.keyThemes
+  .map((t) => `- **${t.theme}** (${t.frequency} mentions) - ${t.sentiment}`)
+  .join("\n")}
 
 ## Urgent Items
 ${result.urgentItems.map((item) => `- ${item}`).join("\n")}
