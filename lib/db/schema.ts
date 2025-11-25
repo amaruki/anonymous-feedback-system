@@ -92,15 +92,6 @@ export const feedback = pgTable("feedback", {
   moderationFlags: text("moderation_flags").array().default([]),
   moderationScore: integer("moderation_score").default(100),
   keywords: text("keywords").array().default([]),
-  // AI categorization fields
-  aiCategory: text("ai_category"),
-  aiSentiment: text("ai_sentiment"), // 'positive', 'neutral', 'negative', 'mixed'
-  aiPriority: text("ai_priority"), // 'low', 'medium', 'high', 'critical'
-  aiSummary: text("ai_summary"),
-  aiKeywords: text("ai_keywords").array(),
-  aiCategorySuggestion: text("ai_category_suggestion"),
-  aiUrgencySuggestion: text("ai_urgency_suggestion"),
-  aiActionItems: text("ai_action_items").array(),
   adminNotes: text("admin_notes").array().default([]),
   resolvedAt: timestamp("resolved_at", { withTimezone: true }),
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow(),
