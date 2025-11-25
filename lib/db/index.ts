@@ -118,15 +118,11 @@ export interface Feedback {
   description: string
   impact?: string | null
   suggestedSolution?: string | null
-  status: "received" | "in_progress" | "resolved" | "rejected"
+  status: "received" | "in-progress" | "resolved" | "rejected"
   moderationStatus: "pending" | "approved" | "rejected" | "flagged"
   moderationReason?: string | null
   moderationScore?: number | null
-  aiCategoryId?: string | null
-  aiSentiment?: string | null
-  aiPriority?: string | null
-  aiKeywords?: string[] | null
-  aiSummary?: string | null
+  allowFollowUp: boolean | null
   adminNotes?: string | null
   resolvedAt?: Date | null
   reporterNotificationType?: "email" | "telegram" | null
