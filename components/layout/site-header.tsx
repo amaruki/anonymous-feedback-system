@@ -31,7 +31,6 @@ export function SiteHeader({ branding }: SiteHeaderProps) {
               className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-white"
               style={{ backgroundColor: primaryColor }}
             >
-              <MessageSquare className="h-4 w-4" />
             </div>
           )}
           <span className="hidden truncate sm:inline-block">{siteName}</span>

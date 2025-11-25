@@ -7,7 +7,7 @@ import { Badge } from "@/components/ui/badge"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import type { FeedbackEntry } from "@/app/actions/feedback"
 import { getActiveCategories } from "@/app/actions/config"
-import type { Category } from "@/lib/db/schema"
+import type { Category } from "@/lib/db" // Import Category from lib/db instead of lib/db/schema to avoid Drizzle ORM compatibility issues
 import { Search, Filter, Clock, CheckCircle2, AlertCircle, MessageSquare, Loader2, Sparkles, Brain } from "lucide-react"
 
 type Props = {
