@@ -72,14 +72,30 @@ const CategoryItem = memo(function CategoryItem({
   onEdit,
   onToggle,
   onDelete,
+  onDragStart,
+  onDragOver,
+  onDrop,
+  isDragged,
 }: {
   category: Category
   onEdit: (category: Category) => void
   onToggle: (category: Category) => void
   onDelete: (id: string) => void
+  onDragStart: (e: React.DragEvent, category: Category) => void
+  onDragOver: (e: React.DragEvent) => void
+  onDrop: (e: React.DragEvent, category: Category) => void
+  isDragged: boolean
 }) {
   return (
-    <div className="flex items-center justify-between p-4 border rounded-lg bg-card">
+    <div
+      className={`flex items-center justify-between p-4 border rounded-lg bg-card transition-opacity ${
+        isDragged ? "opacity-50" : ""
+      }`}
+      draggable
+      onDragStart={(e) => onDragStart(e, category)}
+      onDragOver={onDragOver}
+      onDrop={(e) => onDrop(e, category)}
+    >
       <div className="flex items-center gap-3">
         <GripVertical className="h-4 w-4 text-muted-foreground cursor-grab" />
         <div className="w-4 h-4 rounded-full" style={{ backgroundColor: category.color }} />
@@ -132,14 +148,30 @@ const QuestionItem = memo(function QuestionItem({
   onEdit,
   onToggle,
   onDelete,
+  onDragStart,
+  onDragOver,
+  onDrop,
+  isDragged,
 }: {
   question: Question
   onEdit: (question: Question) => void
   onToggle: (question: Question) => void
   onDelete: (id: string) => void
+  onDragStart: (e: React.DragEvent, question: Question) => void
+  onDragOver: (e: React.DragEvent) => void
+  onDrop: (e: React.DragEvent, question: Question) => void
+  isDragged: boolean
 }) {
   return (
-    <div className="flex items-center justify-between p-4 border rounded-lg bg-card">
+    <div
+      className={`flex items-center justify-between p-4 border rounded-lg bg-card transition-opacity ${
+        isDragged ? "opacity-50" : ""
+      }`}
+      draggable
+      onDragStart={(e) => onDragStart(e, question)}
+      onDragOver={onDragOver}
+      onDrop={(e) => onDrop(e, question)}
+    >
       <div className="flex items-center gap-3">
         <GripVertical className="h-4 w-4 text-muted-foreground cursor-grab" />
         <div>
@@ -206,6 +238,10 @@ export function AdminSettings() {
   const [telegramConfig, setTelegramConfig] = useState({ botToken: "", chatId: "" })
   const [telegramTesting, setTelegramTesting] = useState(false)
   const [telegramTestResult, setTelegramTestResult] = useState<{ success: boolean; message: string } | null>(null)
+
+  // Drag and drop state
+  const [draggedCategory, setDraggedCategory] = useState<Category | null>(null)
+  const [draggedQuestion, setDraggedQuestion] = useState<Question | null>(null)
 
   useEffect(() => {
     const telegramSetting = notifications.find((n) => n.notificationType === "telegram")
@@ -514,6 +550,102 @@ export function AdminSettings() {
     }
   }, [])
 
+  // Drag and drop handlers for categories
+  const handleCategoryDragStart = useCallback((e: React.DragEvent, category: Category) => {
+    setDraggedCategory(category)
+    e.dataTransfer.effectAllowed = "move"
+  }, [])
+
+  const handleCategoryDragOver = useCallback((e: React.DragEvent) => {
+    e.preventDefault()
+    e.dataTransfer.dropEffect = "move"
+  }, [])
+
+  const handleCategoryDrop = useCallback(
+    async (e: React.DragEvent, targetCategory: Category) => {
+      e.preventDefault()
+      if (!draggedCategory || draggedCategory.id === targetCategory.id) return
+
+      try {
+        // Create new order array
+        const newOrder = [...categoriesList]
+        const draggedIndex = newOrder.findIndex((c) => c.id === draggedCategory.id)
+        const targetIndex = newOrder.findIndex((c) => c.id === targetCategory.id)
+
+        // Remove dragged item and insert at target position
+        newOrder.splice(draggedIndex, 1)
+        newOrder.splice(targetIndex, 0, draggedCategory)
+
+        // Update sort order for all items
+        const updates = newOrder.map((category, index) => ({
+          id: category.id,
+          sortOrder: index,
+        }))
+
+        // Optimistic update
+        mutate(SWR_KEYS.categories, newOrder, false)
+
+        // Update all categories with new sort order
+        await Promise.all(updates.map((update) => updateCategory(update.id, { sortOrder: update.sortOrder })))
+        mutate(SWR_KEYS.categories)
+      } catch (error) {
+        console.error("[v0] Error reordering categories:", error)
+        mutate(SWR_KEYS.categories) // Revalidate on error
+      } finally {
+        setDraggedCategory(null)
+      }
+    },
+    [draggedCategory, categoriesList],
+  )
+
+  // Drag and drop handlers for questions
+  const handleQuestionDragStart = useCallback((e: React.DragEvent, question: Question) => {
+    setDraggedQuestion(question)
+    e.dataTransfer.effectAllowed = "move"
+  }, [])
+
+  const handleQuestionDragOver = useCallback((e: React.DragEvent) => {
+    e.preventDefault()
+    e.dataTransfer.dropEffect = "move"
+  }, [])
+
+  const handleQuestionDrop = useCallback(
+    async (e: React.DragEvent, targetQuestion: Question) => {
+      e.preventDefault()
+      if (!draggedQuestion || draggedQuestion.id === targetQuestion.id) return
+
+      try {
+        // Create new order array
+        const newOrder = [...questionsList]
+        const draggedIndex = newOrder.findIndex((q) => q.id === draggedQuestion.id)
+        const targetIndex = newOrder.findIndex((q) => q.id === targetQuestion.id)
+
+        // Remove dragged item and insert at target position
+        newOrder.splice(draggedIndex, 1)
+        newOrder.splice(targetIndex, 0, draggedQuestion)
+
+        // Update sort order for all items
+        const updates = newOrder.map((question, index) => ({
+          id: question.id,
+          sortOrder: index,
+        }))
+
+        // Optimistic update
+        mutate(SWR_KEYS.questions, newOrder, false)
+
+        // Update all questions with new sort order
+        await Promise.all(updates.map((update) => updateQuestion(update.id, { sortOrder: update.sortOrder })))
+        mutate(SWR_KEYS.questions)
+      } catch (error) {
+        console.error("[v0] Error reordering questions:", error)
+        mutate(SWR_KEYS.questions) // Revalidate on error
+      } finally {
+        setDraggedQuestion(null)
+      }
+    },
+    [draggedQuestion, questionsList],
+  )
+
   if (isLoading) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
@@ -569,6 +701,10 @@ export function AdminSettings() {
                   onEdit={handleEditCategory}
                   onToggle={handleToggleCategory}
                   onDelete={handleDeleteCategory}
+                  onDragStart={handleCategoryDragStart}
+                  onDragOver={handleCategoryDragOver}
+                  onDrop={handleCategoryDrop}
+                  isDragged={draggedCategory?.id === category.id}
                 />
               ))}
               {categoriesList.length === 0 && (
@@ -625,6 +761,10 @@ export function AdminSettings() {
                   onEdit={handleEditQuestion}
                   onToggle={handleToggleQuestion}
                   onDelete={handleDeleteQuestion}
+                  onDragStart={handleQuestionDragStart}
+                  onDragOver={handleQuestionDragOver}
+                  onDrop={handleQuestionDrop}
+                  isDragged={draggedQuestion?.id === question.id}
                 />
               ))}
               {questionsList.length === 0 && (
