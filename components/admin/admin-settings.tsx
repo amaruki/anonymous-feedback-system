@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect, useCallback, memo } from "react"
+import { useState, useEffect, useCallback, memo, useRef } from "react"
 import useSWR, { mutate } from "swr"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -242,6 +242,22 @@ export function AdminSettings() {
   // Drag and drop state
   const [draggedCategory, setDraggedCategory] = useState<Category | null>(null)
   const [draggedQuestion, setDraggedQuestion] = useState<Question | null>(null)
+  const [brandingForm, setBrandingForm] = useState({
+    siteName: "",
+    logoUrl: "",
+    siteDescription: "",
+    primaryColor: "#3b82f6",
+    secondaryColor: "#64748b",
+    accentColor: "#10b981",
+    trustBadge1Title: "",
+    trustBadge1Description: "",
+    trustBadge2Title: "",
+    trustBadge2Description: "",
+    trustBadge3Title: "",
+    trustBadge3Description: "",
+  })
+  const [logoFile, setLogoFile] = useState<File | null>(null)
+  const [logoPreview, setLogoPreview] = useState<string>("")
 
   useEffect(() => {
     const telegramSetting = notifications.find((n) => n.notificationType === "telegram")
@@ -258,6 +274,26 @@ export function AdminSettings() {
       })
     }
   }, [notifications])
+
+  useEffect(() => {
+    if (branding) {
+      setBrandingForm({
+        siteName: branding.siteName || "",
+        logoUrl: branding.logoUrl || "",
+        siteDescription: branding.siteDescription || "",
+        primaryColor: branding.primaryColor || "#3b82f6",
+        secondaryColor: branding.secondaryColor || "#64748b",
+        accentColor: branding.accentColor || "#10b981",
+        trustBadge1Title: branding.trustBadge1Title || "",
+        trustBadge1Description: branding.trustBadge1Description || "",
+        trustBadge2Title: branding.trustBadge2Title || "",
+        trustBadge2Description: branding.trustBadge2Description || "",
+        trustBadge3Title: branding.trustBadge3Title || "",
+        trustBadge3Description: branding.trustBadge3Description || "",
+      })
+      setLogoPreview(branding.logoUrl || "")
+    }
+  }, [branding])
 
   const copyToClipboard = useCallback((text: string, key: string) => {
     navigator.clipboard.writeText(text)
@@ -646,6 +682,27 @@ export function AdminSettings() {
     [draggedQuestion, questionsList],
   )
 
+  const handleLogoUpload = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (file) {
+      setLogoFile(file)
+      const reader = new FileReader()
+      reader.onloadend = () => {
+        const base64String = reader.result as string
+        setLogoPreview(base64String)
+        setBrandingForm(prev => ({ ...prev, logoUrl: base64String }))
+        handleSaveBranding("logoUrl", base64String)
+      }
+      reader.readAsDataURL(file)
+    }
+  }, [])
+
+  // Update the color change handler
+  const handleColorChange = useCallback((field: keyof BrandingSettings, value: string) => {
+    setBrandingForm(prev => ({ ...prev, [field]: value }))
+    handleSaveBranding(field, value)
+  }, [])
+
   if (isLoading) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
@@ -788,24 +845,33 @@ export function AdminSettings() {
                 <div className="space-y-2">
                   <Label>Site Name</Label>
                   <Input
-                    defaultValue={branding?.siteName || ""}
+                    value={brandingForm.siteName}
+                    onChange={(e) => setBrandingForm(prev => ({ ...prev, siteName: e.target.value }))}
                     onBlur={(e) => handleSaveBranding("siteName", e.target.value)}
                     placeholder="Anonymous Feedback"
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label>Logo URL</Label>
-                  <Input
-                    defaultValue={branding?.logoUrl || ""}
-                    onBlur={(e) => handleSaveBranding("logoUrl", e.target.value)}
-                    placeholder="https://example.com/logo.png"
-                  />
+                  <Label>Logo</Label>
+                  <div className="flex gap-2">
+                    <Input
+                      type="file"
+                      accept="image/*"
+                      onChange={handleLogoUpload}
+                      className="flex-1"
+                    />
+                    {logoPreview && (
+                      <img src={logoPreview} alt="Logo preview" className="h-10 w-10 object-contain border rounded" />
+                    )}
+                  </div>
+                  <p className="text-xs text-muted-foreground">Upload an image file</p>
                 </div>
               </div>
               <div className="space-y-2">
                 <Label>Site Description</Label>
                 <Textarea
-                  defaultValue={branding?.siteDescription || ""}
+                  value={brandingForm.siteDescription}
+                  onChange={(e) => setBrandingForm(prev => ({ ...prev, siteDescription: e.target.value }))}
                   onBlur={(e) => handleSaveBranding("siteDescription", e.target.value)}
                   placeholder="Share your thoughts anonymously..."
                   rows={2}
@@ -817,12 +883,13 @@ export function AdminSettings() {
                   <div className="flex gap-2">
                     <Input
                       type="color"
-                      defaultValue={branding?.primaryColor || "#3b82f6"}
-                      onChange={(e) => handleSaveBranding("primaryColor", e.target.value)}
-                      className="w-12 h-10 p-1"
+                      value={brandingForm.primaryColor}
+                      onChange={(e) => handleColorChange("primaryColor", e.target.value)}
+                      className="w-12 h-10 p-1 cursor-pointer"
                     />
                     <Input
-                      defaultValue={branding?.primaryColor || "#3b82f6"}
+                      value={brandingForm.primaryColor}
+                      onChange={(e) => setBrandingForm(prev => ({ ...prev, primaryColor: e.target.value }))}
                       onBlur={(e) => handleSaveBranding("primaryColor", e.target.value)}
                       className="flex-1"
                     />
@@ -833,12 +900,13 @@ export function AdminSettings() {
                   <div className="flex gap-2">
                     <Input
                       type="color"
-                      defaultValue={branding?.secondaryColor || "#64748b"}
-                      onChange={(e) => handleSaveBranding("secondaryColor", e.target.value)}
-                      className="w-12 h-10 p-1"
+                      value={brandingForm.secondaryColor}
+                      onChange={(e) => handleColorChange("secondaryColor", e.target.value)}
+                      className="w-12 h-10 p-1 cursor-pointer"
                     />
                     <Input
-                      defaultValue={branding?.secondaryColor || "#64748b"}
+                      value={brandingForm.secondaryColor}
+                      onChange={(e) => setBrandingForm(prev => ({ ...prev, secondaryColor: e.target.value }))}
                       onBlur={(e) => handleSaveBranding("secondaryColor", e.target.value)}
                       className="flex-1"
                     />
@@ -849,12 +917,13 @@ export function AdminSettings() {
                   <div className="flex gap-2">
                     <Input
                       type="color"
-                      defaultValue={branding?.accentColor || "#10b981"}
-                      onChange={(e) => handleSaveBranding("accentColor", e.target.value)}
-                      className="w-12 h-10 p-1"
+                      value={brandingForm.accentColor}
+                      onChange={(e) => handleColorChange("accentColor", e.target.value)}
+                      className="w-12 h-10 p-1 cursor-pointer"
                     />
                     <Input
-                      defaultValue={branding?.accentColor || "#10b981"}
+                      value={brandingForm.accentColor}
+                      onChange={(e) => setBrandingForm(prev => ({ ...prev, accentColor: e.target.value }))}
                       onBlur={(e) => handleSaveBranding("accentColor", e.target.value)}
                       className="flex-1"
                     />
@@ -869,12 +938,14 @@ export function AdminSettings() {
                   <div className="space-y-2">
                     <Label className="text-sm">Badge 1 Title</Label>
                     <Input
-                      defaultValue={branding?.trustBadge1Title || ""}
+                      value={brandingForm.trustBadge1Title}
+                      onChange={(e) => setBrandingForm(prev => ({ ...prev, trustBadge1Title: e.target.value }))}
                       onBlur={(e) => handleSaveBranding("trustBadge1Title", e.target.value)}
                       placeholder="100% Anonymous"
                     />
                     <Input
-                      defaultValue={branding?.trustBadge1Description || ""}
+                      value={brandingForm.trustBadge1Description}
+                      onChange={(e) => setBrandingForm(prev => ({ ...prev, trustBadge1Description: e.target.value }))}
                       onBlur={(e) => handleSaveBranding("trustBadge1Description", e.target.value)}
                       placeholder="Your identity is protected"
                     />
@@ -882,12 +953,14 @@ export function AdminSettings() {
                   <div className="space-y-2">
                     <Label className="text-sm">Badge 2 Title</Label>
                     <Input
-                      defaultValue={branding?.trustBadge2Title || ""}
+                      value={brandingForm.trustBadge2Title}
+                      onChange={(e) => setBrandingForm(prev => ({ ...prev, trustBadge2Title: e.target.value }))}
                       onBlur={(e) => handleSaveBranding("trustBadge2Title", e.target.value)}
                       placeholder="Secure"
                     />
                     <Input
-                      defaultValue={branding?.trustBadge2Description || ""}
+                      value={brandingForm.trustBadge2Description}
+                      onChange={(e) => setBrandingForm(prev => ({ ...prev, trustBadge2Description: e.target.value }))}
                       onBlur={(e) => handleSaveBranding("trustBadge2Description", e.target.value)}
                       placeholder="End-to-end encryption"
                     />
@@ -895,12 +968,14 @@ export function AdminSettings() {
                   <div className="space-y-2">
                     <Label className="text-sm">Badge 3 Title</Label>
                     <Input
-                      defaultValue={branding?.trustBadge3Title || ""}
+                      value={brandingForm.trustBadge3Title}
+                      onChange={(e) => setBrandingForm(prev => ({ ...prev, trustBadge3Title: e.target.value }))}
                       onBlur={(e) => handleSaveBranding("trustBadge3Title", e.target.value)}
                       placeholder="Confidential"
                     />
                     <Input
-                      defaultValue={branding?.trustBadge3Description || ""}
+                      value={brandingForm.trustBadge3Description}
+                      onChange={(e) => setBrandingForm(prev => ({ ...prev, trustBadge3Description: e.target.value }))}
                       onBlur={(e) => handleSaveBranding("trustBadge3Description", e.target.value)}
                       placeholder="Your feedback is private"
                     />
