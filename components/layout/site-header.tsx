@@ -24,7 +24,7 @@ export function SiteHeader({ branding }: SiteHeaderProps) {
             <img 
               src={branding.logoUrl} 
               alt={siteName} 
-              className="h-8 w-8 rounded object-cover" 
+              className="h-8 w-8 rounded object-contain" 
             />
           ) : (
             <div
