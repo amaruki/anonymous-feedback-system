@@ -78,7 +78,7 @@
     "kysely": "latest",
     "lucide-react": "^0.454.0",
     "mysql2": "latest",
-    "next": "16.0.3",
+    "next": "16.0.10",
     "next-themes": "latest",
     "pg": "latest",
     "postgres": "3.4.7",
